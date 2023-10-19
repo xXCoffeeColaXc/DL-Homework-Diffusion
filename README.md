@@ -13,7 +13,7 @@ S+
 
 ## Repository Files & Functions
 - `config.py`: This file contains all configuration settings and parameters required for the project.
-- `create_dicts.py`:  Responsible for generating and saving metadata in the form of JSON files. 
+- `create_metadata.py`:  Responsible for generating and saving metadata in the form of JSON files. 
 - `dataloader.py`: Handles the loading of data for the diffusion model
 
 ## Related Works
