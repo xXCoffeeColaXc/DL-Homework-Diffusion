@@ -1,5 +1,5 @@
-# DL Homework-Diffusion
----
+# DL Homework: Diffusion
+
 # Team Name
 S+
 
