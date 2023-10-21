@@ -1,8 +1,8 @@
 import torch
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-ROOT_DIR = "data/CUB_200_2011/CUB_200_2011"
-METADATA_DIR = "data/metadata"
+ROOT_DIR = "./data/CUB_200_2011/CUB_200_2011"
+METADATA_DIR = "./data/metadata"
 
 
 IMAGE_SIZE = 64

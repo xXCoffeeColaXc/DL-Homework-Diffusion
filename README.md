@@ -5,7 +5,7 @@ S+
 
 ## Team Members
 - Tamásy András - Neptun Code: EA824Y
-- [Member 2 Name] - Neptun Code: [Code]
+- Takáts Bálint - Neptun Code: PUWI1T
 - [Member 3 Name] - Neptun Code: [Code]
 
 ## Project Description
@@ -32,6 +32,16 @@ S+
 - ... (add more blog posts as needed)
 
 ## How to Run
+
+### Downloading data:
+1. Download the dataset from: https://data.caltech.edu/records/65de6-vp158
+2. Ceate the following folders from the root of the project:
+    - ./data
+    - ./data/metadata
+    - ./data/CUB_200_2011
+3. Extract the bounding boxes and images into ./data/CUB_200_2011
+4. Run create_metadata.py
+
 ### Building and Running the Container:
 1. Clone the repository: `git clone [repository_link]`
 2. Navigate to the repository directory: `cd [repo_name]`
