@@ -50,7 +50,7 @@ class CUB200Dataset(Dataset):
             print(str_label)
         
         # Get the bounding box (if needed)
-        bbox = self.bounding_boxes_dict[img_id]
+        bbox = self.bounding_boxes_dict[img_id].copy()
           # Assuming you're resizing the image to (config.IMAGE_SIZE, config.IMAGE_SIZE)
         if self.transform:
             target_width = config.IMAGE_SIZE
