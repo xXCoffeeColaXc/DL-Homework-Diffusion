@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     dataset = CUB200Dataset(config.ROOT_DIR, config.transform)
     loader = DataLoader(dataset, batch_size=5)
-    for idx, (x,y) in enumerate(loader):
+    for idx, (x,y,b) in enumerate(loader):
         print(x.shape)
         save_image(x * 0.5 + 0.5, f"x{idx}.png")
 
