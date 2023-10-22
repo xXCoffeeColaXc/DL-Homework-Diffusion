@@ -51,7 +51,8 @@ class CUB200Dataset(Dataset):
         
         # Get the bounding box (if needed)
         bbox = self.bounding_boxes_dict[img_id].copy()
-          # Assuming you're resizing the image to (config.IMAGE_SIZE, config.IMAGE_SIZE)
+        
+        # Assuming you're resizing the image to (config.IMAGE_SIZE, config.IMAGE_SIZE)
         if self.transform:
             target_width = config.IMAGE_SIZE
             target_height = config.IMAGE_SIZE
@@ -71,7 +72,7 @@ class CUB200Dataset(Dataset):
             image = self.transform(image)
         else:
             image = transforms.ToTensor()(image)
-        # Return the image and its label (return the bounding box if needed)
+
         return image, label, bbox
     
 
@@ -81,6 +82,7 @@ if __name__ == "__main__":
         transforms.Resize((config.IMAGE_SIZE, config.IMAGE_SIZE)),
         transforms.ToTensor(),
         #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # idk 
+        
         transforms.Normalize(0.5, 0.5)
     ])
 

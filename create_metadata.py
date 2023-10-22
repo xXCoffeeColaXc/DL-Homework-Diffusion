@@ -1,6 +1,7 @@
 import config
 import os
 import json
+import random
 
 '''
 bounding_boxes_dict: Key is the image ID and value is a tuple of four numbers representing the bounding box.
@@ -80,16 +81,20 @@ def create_image_dict():
     with open(os.path.join("data", "metadata", "images.json"), 'w') as json_file:
         json.dump(images_dict, json_file, indent=4)
 
-def create_split_dict():
-    with open(os.path.join(config.ROOT_DIR, "train_test_split.txt"), "r") as f:
-        train_test_split_content = f.readlines()
+def create_split_dict(split_ratio=0.8):
+    total_images = len(open(os.path.join(config.ROOT_DIR, "train_test_split.txt")).readlines())
+    
+    num_train_samples = int(total_images * split_ratio)
 
+    # Create a list with labels based on the split
+    labels = ["train"] * num_train_samples + ["test"] * (total_images - num_train_samples)
+    
+    random.shuffle(labels)
+
+    # Create a dictionary with IDs in order and the shuffled labels
     train_test_split_dict = {}
-    for line in train_test_split_content:
-        values = line.strip().split()
-        img_id = int(values[0])
-        split = "train" if values[1] == "1" else "test"
-        train_test_split_dict[img_id] = split
+    for img_id, label in zip(range(1, total_images + 1), labels):
+        train_test_split_dict[img_id] = label
 
     with open(os.path.join(config.METADATA_DIR, "train_test_split.json"), 'w') as json_file:
         json.dump(train_test_split_dict, json_file, indent=4)
@@ -97,11 +102,11 @@ def create_split_dict():
 
 if __name__ == "__main__":
 
-    create_bbox_dict()
-    create_classes_dict()
-    create_image_dict()
-    create_labels_dict()
-    create_split_dict()
+    #create_bbox_dict()
+    #create_classes_dict()
+    #create_image_dict()
+    #create_labels_dict()
+    create_split_dict(split_ratio=0.8)
 
 
 
