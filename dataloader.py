@@ -32,10 +32,12 @@ class CUB200Dataset(Dataset):
         self.image_ids = [img_id for img_id, s in self.train_test_split_dict.items() if s == self.split]
 
     def __len__(self):
-        return len(self.image_ids)
+        return len(self.image_ids) * 2 #increase the dataset size by 2x:
 
     def __getitem__(self, idx):
-        img_id = self.image_ids[idx]
+        #img_id = self.image_ids[idx]
+        img_id = self.image_ids[idx % len(self.image_ids)]  # wrap around to the original dataset
+
         img_path = os.path.join(self.root_dir, "images", self.images_dict[img_id])
         if self.logging:
             print(img_path)
@@ -81,18 +83,7 @@ class CUB200Dataset(Dataset):
 
 if __name__ == "__main__":
 
-    transform = transforms.Compose([
-        transforms.Resize((config.IMAGE_SIZE, config.IMAGE_SIZE)),
-
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(10),
-        transforms.ColorJitter(brightness=0.2),
-
-        transforms.ToTensor(),
-        transforms.Normalize(0.5, 0.5)
-    ])
-
-    dataset = CUB200Dataset(config.ROOT_DIR, transform)
+    dataset = CUB200Dataset(config.ROOT_DIR, config.transform)
     loader = DataLoader(dataset, batch_size=5)
     for idx, (x,y) in enumerate(loader):
         print(x.shape)
