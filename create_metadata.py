@@ -102,10 +102,10 @@ def create_split_dict(split_ratio=0.8):
 
 if __name__ == "__main__":
 
-    #create_bbox_dict()
-    #create_classes_dict()
-    #create_image_dict()
-    #create_labels_dict()
+    create_bbox_dict()
+    create_classes_dict()
+    create_image_dict()
+    create_labels_dict()
     create_split_dict(split_ratio=0.8)
 
 

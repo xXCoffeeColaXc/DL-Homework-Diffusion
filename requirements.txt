@@ -1,0 +1,12 @@
+Pillow==9.4.0
+torch==2.1.0
+torchvision==0.16.0
+numpy==1.26.0
+matplotlib==3.7.1
+jupyter-client==8.1.0
+jupyter-core==5.3.0
+jupyter-events==0.6.3
+jupyter-server==2.5.0
+jupyter-server-terminals==0.4.4
+jupyterlab==3.5.2
+jupyterlab-pygments==0.2.2
