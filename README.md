@@ -18,18 +18,16 @@ S+
 
 ## Related Works
 ### Papers:
-- [Title of the paper 1](link_to_the_paper_1)
-- [Title of the paper 2](link_to_the_paper_2)
-- ... (add more papers as needed)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
+- [Denoising Diffusion Implicit Models](https://arxiv.org/abs/2010.02502)
 
 ### GitHub Repositories:
-- [Repo Name 1](link_to_the_repo_1)
-- [Repo Name 2](link_to_the_repo_2)
-- ... (add more repositories as needed)
+- [clear-diffusion-keras](https://github.com/beresandras/clear-diffusion-keras)
+
 
 ### Blog Posts:
-- [Blog Post Title 1](link_to_the_blog_post_1)
-- ... (add more blog posts as needed)
+- [Denoising Diffusion Implicit Models](https://keras.io/examples/generative/ddim/)
+- [CUB-200-2011 (Caltech-UCSD Birds-200-2011)](https://paperswithcode.com/dataset/cub-200-2011)
 
 ## How to Run
 
