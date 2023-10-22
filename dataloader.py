@@ -36,6 +36,12 @@ class CUB200Dataset(Dataset):
 
     def __getitem__(self, idx):
         #img_id = self.image_ids[idx]
+
+        '''
+        Each image in the dataset will be augmented and fetched twice in one epoch, 
+        effectively doubling the dataset size.
+        '''
+
         img_id = self.image_ids[idx % len(self.image_ids)]  # wrap around to the original dataset
 
         img_path = os.path.join(self.root_dir, "images", self.images_dict[img_id])
