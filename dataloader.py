@@ -32,7 +32,8 @@ class CUB200Dataset(Dataset):
         self.image_ids = [img_id for img_id, s in self.train_test_split_dict.items() if s == self.split]
 
     def __len__(self):
-        return len(self.image_ids) * 2 #increase the dataset size by 2x:
+        #return len(self.image_ids) * 2 #increase the dataset size by 2x:
+        return len(self.image_ids)
 
     def __getitem__(self, idx):
         #img_id = self.image_ids[idx]
@@ -42,7 +43,8 @@ class CUB200Dataset(Dataset):
         effectively doubling the dataset size.
         '''
 
-        img_id = self.image_ids[idx % len(self.image_ids)]  # wrap around to the original dataset
+        #img_id = self.image_ids[idx % len(self.image_ids)]  # wrap around to the original dataset
+        img_id = self.image_ids[idx] 
 
         img_path = os.path.join(self.root_dir, "images", self.images_dict[img_id])
         if self.logging:
@@ -85,6 +87,25 @@ class CUB200Dataset(Dataset):
     
     def denormalize():
         pass
+
+def get_data(type="train"):
+    transform = transforms.Compose([
+
+        #transforms.RandomRotation(10),
+        #transforms.ColorJitter(brightness=0.2),
+        #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        #transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+
+        transforms.Resize(config.IMAGE_SIZE, transforms.InterpolationMode.BILINEAR),  # Resize the smallest side to 128 and maintain aspect ratio
+        transforms.RandomCrop(config.IMAGE_SIZE), 
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(), # [0, 1] -> [-1, 1]
+        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        #transforms.Lambda(lambda t: (t*2) - 1) # Scales between [-1, 1] TODO: denormalize (t+1)/2
+    ])
+    dataset = CUB200Dataset(config.ROOT_DIR, transform, split=type)
+    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
+    return dataloader
     
 
 if __name__ == "__main__":
