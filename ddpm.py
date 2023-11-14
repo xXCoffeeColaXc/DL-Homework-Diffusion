@@ -3,9 +3,11 @@ import torch.nn as nn
 from tqdm import tqdm
 import config
 from utils import *
+from dataloader import get_data
 from torchvision.utils import save_image
 from modules import UNet
 from torch import optim
+import os
 
 class Diffusion:
     def __init__(self):
@@ -19,7 +21,7 @@ class Diffusion:
     def prepare_noise_schedule(self):
         return torch.linspace(config.BETA_START, config.BETA_END, config.NOISE_STEPS)
     
-    # Add t step noise to an image
+    # Add t step noise to an image / noise_images
     # x(t) = sqrt(alpha_hat)*x(0) + sqrt(1-alpha_hat)*epsilon
     def forward_process(self, x, t):
         sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None, None]
@@ -60,7 +62,7 @@ class Diffusion:
         #logger = SummaryWriter(os.path.join("runs", args.run_name))
         l = len(dataloader)
 
-        for epoch in range(config.NUM_EPOCHS):
+        for epoch in range(1, config.NUM_EPOCHS):
             #logging.info(f"Starting epoch {epoch}:") TODO logger
             print(f"Starting epoch {epoch}:")
             pbar = tqdm(dataloader)
@@ -79,12 +81,13 @@ class Diffusion:
                 #logger.add_scalar("MSE", loss.item(), global_step=epoch * l + i) TODO logger
             print(f"Epoch: {epoch} MSE: {loss.item()}")
 
-            sampled_images = self.sample(model, n=images.shape[0])
-            # TODO save_image from torch
-            # TODO save_model
-            # TODO load_model
-            save_images(sampled_images, os.path.join(config.EVAL, config.RUN_NAME, f"{epoch}.jpg"))
-            #torch.save(model.state_dict(), os.path.join("models", config.RUN_NAME, f"ckpt.pt"))
+            if epoch % config.SAMPLE_STEP == 0:
+                sampled_images = self.sample(model, n=images.shape[0])
+                # TODO save_image from torch
+                # TODO save_model
+                # TODO load_model
+                save_images(sampled_images, os.path.join(config.EVAL, config.RUN_NAME, f"{epoch}.jpg"))
+                #torch.save(model.state_dict(), os.path.join("models", config.RUN_NAME, f"ckpt.pt"))
 
 
 if __name__ == '__main__':

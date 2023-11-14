@@ -20,6 +20,9 @@ BATCH_SIZE = 4
 NUM_WORKERS = 2
 
 
+SAMPLE_STEP = 1 # 
+
+
 # transform = transforms.Compose([
 #         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
 
