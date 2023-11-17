@@ -2,7 +2,7 @@ import torch
 import torchvision
 from PIL import Image
 from matplotlib import pyplot as plt
-
+import os
 
 # TODO denormalize
 # 
@@ -20,5 +20,16 @@ def save_images(images, path, **kwargs):
     ndarr = grid.permute(1, 2, 0).to('cpu').numpy()
     im = Image.fromarray(ndarr)
     im.save(path)
+
+def create_folders(config):
+    # Create directories if not exist.
+    if not os.path.exists(config.log_dir):
+        os.makedirs(config.log_dir)
+    if not os.path.exists(config.model_save_dir):
+        os.makedirs(config.model_save_dir)
+    if not os.path.exists(config.sample_dir):
+        os.makedirs(config.sample_dir)
+    if not os.path.exists(config.result_dir):
+        os.makedirs(config.result_dir)
 
 
