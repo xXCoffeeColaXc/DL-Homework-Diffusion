@@ -89,24 +89,29 @@ class CUB200Dataset(Dataset):
         pass
 
 def get_data(type="train"):
-    transform = transforms.Compose([
+    # Common transformations
+    base_transforms = [
+        transforms.Resize(config.IMAGE_SIZE, transforms.InterpolationMode.BILINEAR),
+        transforms.RandomCrop(config.IMAGE_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+    ]
 
+    if type == "train":
+        # Some other transformations:
         #transforms.RandomRotation(10),
         #transforms.ColorJitter(brightness=0.2),
         #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         #transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
 
-        transforms.Resize(config.IMAGE_SIZE, transforms.InterpolationMode.BILINEAR),  # Resize the smallest side to 128 and maintain aspect ratio
-        transforms.RandomCrop(config.IMAGE_SIZE), 
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(), # [0, 1] -> [-1, 1]
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-        #transforms.Lambda(lambda t: (t*2) - 1) # Scales between [-1, 1] TODO: denormalize (t+1)/2
-    ])
+        base_transforms.insert(2, transforms.RandomHorizontalFlip()) # Insert RandomHorizontalFlip after RandomCrop
+
+    transform = transforms.Compose(base_transforms)
+
     dataset = CUB200Dataset(config.ROOT_DIR, transform, split=type)
     dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
     return dataloader
-    
+
 
 if __name__ == "__main__":
 
