@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 class CUB200Dataset(Dataset):
-    def __init__(self, root_dir, transform=None, split="train", logging=False):
+    def __init__(self, root_dir, metadata_dir, image_size, transform=None, mode="train", logging=False):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -17,19 +17,21 @@ class CUB200Dataset(Dataset):
             split (string): "train" or "test" to specify the dataset split.
         """
         self.root_dir = root_dir
+        self.metadata_dir = metadata_dir
+        self.image_size = image_size
         self.transform = transform
-        self.split = split
+        self.mode = mode
         self.logging = logging
         
         # Load the dictionaries
-        self.images_dict = json.load(open(os.path.join(config.METADATA_DIR, "images.json"), "r"))
-        self.bounding_boxes_dict = json.load(open(os.path.join(config.METADATA_DIR, "bounding_boxes.json"), "r"))
-        self.image_class_labels_dict = json.load(open(os.path.join(config.METADATA_DIR, "image_class_labels.json"), "r"))
-        self.train_test_split_dict = json.load(open(os.path.join(config.METADATA_DIR, "train_test_split.json"), "r"))
-        self.classes_dict = json.load(open(os.path.join(config.METADATA_DIR, "classes.json"), "r"))
+        self.images_dict = json.load(open(os.path.join(metadata_dir, "images.json"), "r"))
+        self.bounding_boxes_dict = json.load(open(os.path.join(metadata_dir, "bounding_boxes.json"), "r"))
+        self.image_class_labels_dict = json.load(open(os.path.join(metadata_dir, "image_class_labels.json"), "r"))
+        self.train_test_split_dict = json.load(open(os.path.join(metadata_dir, "train_test_split.json"), "r"))
+        self.classes_dict = json.load(open(os.path.join(metadata_dir, "classes.json"), "r"))
         
         # Filter the image IDs based on the split
-        self.image_ids = [img_id for img_id, s in self.train_test_split_dict.items() if s == self.split]
+        self.image_ids = [img_id for img_id, s in self.train_test_split_dict.items() if s == self.mode]
 
     def __len__(self):
         #return len(self.image_ids) * 2 #increase the dataset size by 2x:
@@ -64,8 +66,8 @@ class CUB200Dataset(Dataset):
         
         # Assuming you're resizing the image to (config.IMAGE_SIZE, config.IMAGE_SIZE)
         if self.transform:
-            target_width = config.IMAGE_SIZE
-            target_height = config.IMAGE_SIZE
+            target_width = self.image_size
+            target_height = self.image_size
             
             # Calculate scaling factors
             x_scale = target_width / orig_width
@@ -88,16 +90,16 @@ class CUB200Dataset(Dataset):
     def denormalize():
         pass
 
-def get_data(type="train"):
+def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train", num_workers=1):
     # Common transformations
     base_transforms = [
-        transforms.Resize(config.IMAGE_SIZE, transforms.InterpolationMode.BILINEAR),
-        transforms.RandomCrop(config.IMAGE_SIZE),
+        transforms.Resize(image_size, transforms.InterpolationMode.BILINEAR),
+        transforms.RandomCrop(image_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
     ]
 
-    if type == "train":
+    if mode == "train":
         # Some other transformations:
         #transforms.RandomRotation(10),
         #transforms.ColorJitter(brightness=0.2),
@@ -108,21 +110,6 @@ def get_data(type="train"):
 
     transform = transforms.Compose(base_transforms)
 
-    dataset = CUB200Dataset(config.ROOT_DIR, transform, split=type)
-    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
+    dataset = CUB200Dataset(image_dir, metadata_dir, image_size, transform, mode=mode)
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
     return dataloader
-
-
-if __name__ == "__main__":
-
-    dataset = CUB200Dataset(config.ROOT_DIR, config.transform)
-    loader = DataLoader(dataset, batch_size=5)
-    for idx, (x,y,b) in enumerate(loader):
-        print(x.shape)
-        save_image(x * 0.5 + 0.5, f"x{idx}.png")
-
-        
-        if idx == 3:
-            import sys
-
-            sys.exit()
