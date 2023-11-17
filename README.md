@@ -9,12 +9,16 @@ S+
 - Hujbert Patrik - Neptun Code: D83AE5
 
 ## Project Description
-[Provide a brief description of your project here. This should give readers an idea of what the diffusion model implementation accomplishes, any unique features, and its significance in the context of your university project.]
+This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to generate bird images. Leveraging the comprehensive CUB200 dataset, which contains diverse and detailed images of bird species, the project aims to harness the power of diffusion models for generative tasks.
 
 ## Repository Files & Functions
 - `config.py`: This file contains all configuration settings and parameters required for the project.
 - `create_metadata.py`:  Responsible for generating and saving metadata in the form of JSON files. 
 - `dataloader.py`: Handles the loading of data for the diffusion model
+- `ddpm.py`: This file implements the Denoising Diffusion Probabilistic Model (DDPM). It includes the core functionalities for training and sampling from the diffusion model. The file defines the DDPM class with methods for the forward and reverse diffusion processes, loss computation, and utilities for handling the diffusion steps. It serves as the backbone of the diffusion-based generative model, enabling the generation of new data samples through a trained diffusion process.
+- `main.py`: The main entry point of the application. This script handles command-line arguments and orchestrates the initialization and execution of the Diffusion model.
+- `modules.py`: This file houses the architectural modules for the U-Net model used in the diffusion process. It includes definitions for various neural network layers and blocks, such as encoders, decoders, attention mechanisms, and other components specific to the U-Net architecture.
+- `utils.py`: This file contains utility functions used across the project.
 
 ## Related Works
 ### Papers:
@@ -47,9 +51,9 @@ S+
 4. Build the Docker container: `docker build -t [container_name] .`
 5. Run the Docker container with mounting the data: `docker run -v absolute/path/to/data:/home/custom_user/dl_homework_diffusion/data -it -p 8888:8888 [container_name]`
 
-### Running the dataloader Within the Container:
+### Running the Diffusion model Within the Container:
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
-2. Run the dataloader file: `python dataloader.py`
+2. Run the main file: `python main.py`
 
 ### Running data exploration Within the Container:
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
