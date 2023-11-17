@@ -89,6 +89,7 @@ class DoubleConv(nn.Module):
             return F.gelu(x + self.double_conv(x))
         else:
             return self.double_conv(x)
+        
         # NOTE this commented lines are from Beres Andras implementation
         # x = self.norm1(x)
         # x = F.silu(x)
@@ -162,6 +163,7 @@ class UpBlock(nn.Module):
         x = self.conv(x)
         emb = self.emb_layer(t)[:, :, None, None].repeat(1, 1, x.shape[-2], x.shape[-1])
         return x + emb
+    
     # NOTE this commented lines are from Beres Andras implementation
     #     layers = []
     #     for i in range(block_depth):
@@ -180,19 +182,20 @@ class UpBlock(nn.Module):
     #     x = self.up_blocks(x) + time_embed
     #     return self.upsample(x)
     
-
+# features=[64, 128, 256, 512, 1024]
 class UNet(nn.Module):
-    def __init__(self, c_in=3, c_out=3, features=[64, 128, 256, 512, 1024], block_depth=1, time_emb_dim=256) -> None:
+    def __init__(self, c_in=3, c_out=3, image_size=64, conv_dim=64, block_depth=3, time_emb_dim=256) -> None:
         super(UNet, self).__init__()
 
         # NOTE Beres Andras did the same, just in a more compact form
         # Resudial block contains double conv and attention
         # Down/Up blocks contain resudial blocks
-
-        # TODO refactor to a more customable form, use features and block_depth
+        
         self.time_dim = time_emb_dim
+       
         # Encoder
         self.inc = DoubleConv(c_in, 64)
+
         self.down1 = DownBlock(64, 128)
         self.sa1 = SelfAttention(128, 32)
         self.down2 = DownBlock(128, 256)
@@ -214,6 +217,40 @@ class UNet(nn.Module):
         self.sa6 = SelfAttention(64, 64)
         self.outc = nn.Conv2d(64, c_out, kernel_size=1)
 
+
+        # TODO refactor to a more customable form, use conv_dim, image_size and block_depth
+        # current_dim = conv_dim
+        # current_image_size = image_size
+        # # Encoder
+        # self.inc = DoubleConv(c_in, current_dim)
+        # self.down_blocks = nn.ModuleList()
+        # self.sa_blocks_down = nn.ModuleList()
+
+        # # Creating Down/SA Blocks Dynamically
+        # for i in range(block_depth):
+        #     self.down_blocks.append(DownBlock(current_dim, current_dim * 2))
+        #     self.sa_blocks_down.append(SelfAttention(current_dim * 2, current_image_size // 2))
+        #     current_dim *= 2
+        #     current_image_size //= 2
+
+        # # Bottleneck
+        # self.bot1 = DoubleConv(current_dim, current_dim * 2)
+        # self.bot2 = DoubleConv(current_dim * 2, current_dim * 2)
+        # self.bot3 = DoubleConv(current_dim * 2, current_dim)
+
+        # # Decoder
+        # self.up_blocks = nn.ModuleList()
+        # self.sa_blocks_up = nn.ModuleList()
+
+        # # Creating Up/SA Blocks Dynamically
+        # for i in range(block_depth):
+        #     self.up_blocks.append(UpBlock(current_dim * 2, current_dim // 2))
+        #     self.sa_blocks_up.append(SelfAttention(current_dim // 2, current_image_size * 2))
+        #     current_dim //= 2
+        #     current_image_size *= 2
+
+        # self.outc = nn.Conv2d(current_dim, c_out, kernel_size=1)
+
     # NOTE SinusoidalPositionEmbeddings....
     # for example:
     # t = torch.tensor([100,200,300,400])
@@ -223,7 +260,7 @@ class UNet(nn.Module):
     def pos_encoding(self, t, channels):
         inv_freq = 1.0 / (
             10000
-            ** (torch.arange(0, channels, 2, device=config.DEVICE).float() / channels)
+            ** (torch.arange(0, channels, 2, device='cuda').float() / channels) # TODO fix cuda 
         )
         pos_enc_a = torch.sin(t.repeat(1, channels // 2) * inv_freq)
         pos_enc_b = torch.cos(t.repeat(1, channels // 2) * inv_freq)
@@ -308,13 +345,14 @@ class UNet(nn.Module):
 
 
 if __name__ == '__main__':
-
+   
     net = UNet()
-    net = net.to(config.DEVICE)
+    net = net.to('cuda')
     print(sum([p.numel() for p in net.parameters()]))
+    print(net)
     x = torch.randn(3, 3, 64, 64)
     t = x.new_tensor([500] * x.shape[0]).long()
-    x = x.to(config.DEVICE)
-    t = t.to(config.DEVICE)
+    x = x.to('cuda')
+    t = t.to('cuda')
     pred = net(x, t) 
     print(pred.shape)
