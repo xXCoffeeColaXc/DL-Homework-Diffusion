@@ -108,6 +108,17 @@ def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train",
 
         base_transforms.insert(2, transforms.RandomHorizontalFlip()) # Insert RandomHorizontalFlip after RandomCrop
 
+    # TODO rethink base_transforms
+    if mode == "test":
+        base_transforms = [
+            transforms.Resize(299),
+            transforms.CenterCrop(299),
+            transforms.ToTensor(),
+            #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+
+    
+
     transform = transforms.Compose(base_transforms)
 
     dataset = CUB200Dataset(image_dir, metadata_dir, image_size, transform, mode=mode)

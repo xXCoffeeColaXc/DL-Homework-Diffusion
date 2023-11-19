@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('--conv_dim', type=int, default=64, help='number of conv filters in the first layer of the UNet')
     parser.add_argument('--block_depth', type=int, default=3, help='depth of conv layers in encoder/decoder')
     parser.add_argument('--time_emb_dim', type=int, default=256, help='number of channels for time embedding')
+    parser.add_argument('--resume_iter', type=int, default=None, help='resume training from this iteration')
     
     # parser.add_argument('--block_depth_bottleneck', type=int, default=6, help='depth of conv layers in the bottleneck')
     
