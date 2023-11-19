@@ -31,6 +31,7 @@ class Config(object):
         self.conv_dim = config.conv_dim
         self.block_depth = config.block_depth
         self.time_emb_dim = config.time_emb_dim
+        self.resume_iter = config.resume_iter
 
         # Training configurations.
         self.batch_size = config.batch_size
