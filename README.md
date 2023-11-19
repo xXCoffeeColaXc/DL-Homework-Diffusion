@@ -64,4 +64,5 @@ This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to gene
 
 
 
-
+### Training logs for Milestone 2:
+1. https://api.wandb.ai/links/hakateam/s2jlnpab
