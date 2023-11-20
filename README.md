@@ -51,9 +51,10 @@ This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to gene
 4. Build the Docker container: `docker build -t [container_name] .`
 5. Run the Docker container with mounting the data: `docker run -v absolute/path/to/data:/home/custom_user/dl_homework_diffusion/data -it -p 8888:8888 [container_name]`
 
-### Running the Diffusion model Within the Container:
+### Running the Pipeline Within the Container:
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
-2. Run the main file: `python main.py`
+2. To train the model: `python main.py --mode=train`
+3. To test the model: `python main.py --mode=test`
 
 ### Running data exploration Within the Container:
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
