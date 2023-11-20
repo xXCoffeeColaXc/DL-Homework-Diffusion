@@ -93,7 +93,7 @@ class Diffusion:
 
         x = x * std + mean
         x = x * 255
-        x = x.clamp(0, 255)
+        x = x.clamp(0, 255).type(torch.uint8)
         return x
 
     # NOTE Algorithm 1 Traning from original paper
