@@ -79,8 +79,15 @@ class Diffusion:
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         self.unet.train()
         # bringing the values back to valid pixel range
-        x = (x.clamp(-1, 1) + 1) / 2
-        x = (x * 255).type(torch.uint8)
+        # x = (x.clamp(-1, 1) + 1) / 2
+        # x = (x * 255).type(torch.uint8)
+
+        mean = torch.tensor([0.4865, 0.4998, 0.4323])
+        std = torch.tensor([0.2326, 0.2276, 0.2659])
+
+        x = x * std + mean
+        x = x * 255
+        x = x.clamp(0, 255)
         return x
 
     # NOTE Algorithm 1 Traning from original paper

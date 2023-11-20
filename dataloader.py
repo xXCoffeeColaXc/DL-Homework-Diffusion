@@ -92,11 +92,13 @@ class CUB200Dataset(Dataset):
 
 def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train", num_workers=1):
     # Common transformations
+    mean = torch.tensor([0.4865, 0.4998, 0.4323])
+    std = torch.tensor([0.2326, 0.2276, 0.2659])
     base_transforms = [
         transforms.Resize(image_size, transforms.InterpolationMode.BILINEAR),
         transforms.RandomCrop(image_size),
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        transforms.Normalize(mean=mean, std=std),
     ]
 
     if mode == "train":
