@@ -85,6 +85,10 @@ class Diffusion:
         mean = torch.tensor([0.4865, 0.4998, 0.4323])
         std = torch.tensor([0.2326, 0.2276, 0.2659])
 
+        mean = mean[:, None, None]
+        std = std[:, None, None]
+
+
         x = x * std + mean
         x = x * 255
         x = x.clamp(0, 255)
