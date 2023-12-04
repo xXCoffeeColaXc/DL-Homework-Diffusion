@@ -65,7 +65,7 @@ class Diffusion:
 
     def ddim_sample(self, n):
 
-        sample_step_number = 5
+        sample_step_number = self.config.ddim_sample_step
         sample_steps = np.linspace(1, self.config.noise_steps - 1, sample_step_number + 1, dtype=int)
         sample_steps = sample_steps[1:] # drop the 1
 

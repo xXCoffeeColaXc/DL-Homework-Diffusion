@@ -61,4 +61,5 @@ class Config(object):
         self.sample_step = config.sample_step
         self.validation_step = config.validation_step
         self.model_save_step = config.model_save_step
+        self.ddim_sample_step = config.ddim_sample_step
 
