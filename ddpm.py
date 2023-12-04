@@ -218,7 +218,7 @@ class Diffusion:
         if self.config.resume_iter:
             self.restore_model(self.config.resume_iter)
 
-        num_iters = 0
+        # num_iters = 0
 
         for batch_idx, (images, label, _) in enumerate(self.dataloader):
             real_images = images.to(self.config.device) #[0, 1]
@@ -230,9 +230,9 @@ class Diffusion:
             self.fid_metric.update(real_images, real=True)
             self.fid_metric.update(generated_images, real=False)
 
-            num_iters += 1
-            if num_iters > 2: 
-                break
+            # num_iters += 1
+            # if num_iters > 2: 
+            #     break
             
         kid_score = self.kid_metric.compute()
         print(f"KID score: {kid_score}")
