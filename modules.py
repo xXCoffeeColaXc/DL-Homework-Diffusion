@@ -181,9 +181,12 @@ class UpBlock(nn.Module):
     #     time_embed = self.timestep_embedding(t)[:, :, None, None]
     #     x = self.up_blocks(x) + time_embed
     #     return self.upsample(x)
+
+class DiffusionUNet(nn.Module):
+    requires_alpha_hat_timestep = False
     
 # features=[64, 128, 256, 512, 1024]
-class UNet(nn.Module):
+class UNet(DiffusionUNet):
     def __init__(self, c_in=3, c_out=3, image_size=64, conv_dim=64, block_depth=3, time_emb_dim=256) -> None:
         super(UNet, self).__init__()
 

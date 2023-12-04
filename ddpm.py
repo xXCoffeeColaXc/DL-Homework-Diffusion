@@ -4,12 +4,16 @@ from tqdm import tqdm
 from utils import *
 from torch import optim
 import os
-from modules import UNet
 import wandb
 import time
 import datetime
 from metrics import KID
 from torchmetrics.image.fid import FrechetInceptionDistance
+import numpy as np
+
+#from modules import UNet
+from ddim_modules import UNet
+
 
 
 class Diffusion:
@@ -50,25 +54,67 @@ class Diffusion:
     
     # Add t step noise to an image / noise_images
     # x(t) = sqrt(alpha_hat)*x(0) + sqrt(1-alpha_hat)*epsilon
-    def forward_process(self, x, t):
+    def forward_process(self, x, noise, t):
         sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None, None]
         sqrt_one_minus_alpha_hat = torch.sqrt(1.0 - self.alpha_hat[t])[:, None, None, None]
-        epsilon = torch.randn_like(x) # random noise
-        return sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * epsilon, epsilon
+        return sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * noise
     
     # sample a random timestep
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.config.noise_steps, size=(n,))
 
+    def ddim_sample(self, n):
+
+        sample_step_number = 5
+        sample_steps = np.linspace(1, self.config.noise_steps - 1, sample_step_number + 1, dtype=int)
+        sample_steps = sample_steps[1:] # drop the 1
+
+        print(f"Sampling {n} new images...")
+        self.unet.eval()
+        with torch.no_grad():
+            x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
+            for i in reversed(sample_steps):
+                t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
+                alpha_hat = self.alpha_hat[t][:, None, None, None]
+                one_minus_alpha_hat = 1.0 - alpha_hat
+                if self.unet.requires_alpha_hat_timestep:
+                    predicted_noise = self.unet(x, one_minus_alpha_hat)
+                else:
+                    predicted_noise = self.unet(x, t)
+                pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat)
+                x = self.forward_process(pred_img, predicted_noise, t)
+
+            self.unet.train()
+
+            mean = torch.tensor([0.5, 0.5, 0.5])
+            std = torch.tensor([0.5, 0.5, 0.5])
+            mean = mean.to(self.config.device)
+            std = std.to(self.config.device)
+
+            mean = mean[:, None, None]
+            std = std[:, None, None]
+
+
+            x = x * std + mean
+            x = x * 255
+            x = x.clamp(0, 255).type(torch.uint8)
+            return x
+
+
+
     # NOTE Algorithm 2 Sampling from original paper
-    def sample(self, n):
+    def ddpm_sample(self, n):
         print(f"Sampling {n} new images...") # TODO logger
         self.unet.eval()
         with torch.no_grad():
             x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
             for i in tqdm(reversed(range(1, self.config.noise_steps)), position=0):
                 t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
-                predicted_noise = self.unet(x, t)
+                one_minus_alpha_hat = 1.0 - self.alpha_hat[t][:, None, None, None]
+                if self.unet.requires_alpha_hat_timestep:
+                    predicted_noise = self.unet(x, one_minus_alpha_hat)
+                else:
+                    predicted_noise = self.unet(x, t)
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_hat = self.alpha_hat[t][:, None, None, None]
                 beta = self.beta[t][:, None, None, None]
@@ -77,6 +123,7 @@ class Diffusion:
                 else:
                     noise = torch.zeros_like(x)
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+                break
         self.unet.train()
         # bringing the values back to valid pixel range
         # x = (x.clamp(-1, 1) + 1) / 2
@@ -116,8 +163,13 @@ class Diffusion:
 
                 images = images.to(self.config.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.config.device) # get batch amount random timesteps
-                x_t, noise = self.forward_process(images, t) # add t timestep noise to the image
-                predicted_noise = self.unet(x_t, t) # backward process: predict the added noise
+                noise = torch.randn_like(images)
+                x_t = self.forward_process(images, noise, t) # add t timestep noise to the image
+                one_minus_alpha_hat = 1.0 - self.alpha_hat[t][:, None, None, None]
+                if self.unet.requires_alpha_hat_timestep:
+                    predicted_noise = self.unet(x_t, one_minus_alpha_hat)
+                else:
+                    predicted_noise = self.unet(x_t, t)
                 mse_loss = self.mse(noise, predicted_noise) # calculate loss
 
                 self.opt.zero_grad()
@@ -140,7 +192,7 @@ class Diffusion:
 
                 # Sample images and save them
                 if num_iter % self.config.sample_step == 0:
-                    sampled_images = self.sample(n=images.shape[0])
+                    sampled_images = self.ddim_sample(n=images.shape[0])
                     save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
                 # Save model
@@ -153,7 +205,13 @@ class Diffusion:
                         "loss": mse_loss,
                         "epochs": epoch,
                         })
-      
+
+            if epoch == 50 or epoch == 80 or epoch == 100:
+                self.save_model(epoch)
+                sampled_images = self.ddim_sample(n=16)
+                save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
+
+
     def test(self):
         print("started_testing")
         # Load the trained model.
@@ -164,7 +222,7 @@ class Diffusion:
 
         for batch_idx, (images, label, _) in enumerate(self.dataloader):
             real_images = images.to(self.config.device) #[0, 1]
-            generated_images = self.sample(self.config.batch_size) #[0, 255]
+            generated_images = self.ddim_sample(self.config.batch_size) #[0, 255]
             generated_images = (generated_images / 255) #[0, 1]
             
             # TODO check what's wrong when batch_size=1, while updating the metrics
