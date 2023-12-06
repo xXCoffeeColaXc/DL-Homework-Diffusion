@@ -15,7 +15,6 @@ import numpy as np
 from ddim_modules import UNet
 
 
-
 class Diffusion:
     def __init__(self, config, dataloader):
 
@@ -148,21 +147,19 @@ class Diffusion:
     # NOTE Algorithm 1 Traning from original paper
     def train(self):
 
-        # NOTE resume training is still in progress
         # Start training from scratch or resume training.
-        # start_epoch = 1
-        # if self.config.resume_iters:
-        #     start_epoch = self.config.resume_iters
-        #     self.model.restore_model(self.config.resume_iters) 
-
+        start_epoch = 0
+        if self.config.resume_epoch:
+            start_epoch = self.restore_model(self.config.resume_epoch) 
+            
         l = len(self.dataloader)
 
-        for epoch in range(0, self.config.epochs):
+        for epoch in range(start_epoch, self.config.epochs):
             print(f"Starting epoch {epoch}:")
             start_time = time.time() # duration for one epoch
             
             for batch_idx, (images, label, _) in enumerate(self.dataloader):
-                print(batch_idx)
+                # print(batch_idx)
                 images = images.to(self.config.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.config.device) # get batch amount random timesteps
                 noise = torch.randn_like(images)
@@ -197,28 +194,32 @@ class Diffusion:
                     sampled_images = self.ddim_sample(n=images.shape[0])
                     save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
-                # Save model
-                if num_iter % self.config.model_save_step == 0:
-                    self.save_model(num_iter)
-
+               
                 # Log to wandb
                 if self.config.wandb:
                     wandb.log({
                         "loss": mse_loss,
                         "epochs": epoch,
                         })
+                    
+            # Save model after every epoch
+            # NOTE we dont want to save the model state mid batch, thats why we save it after an epoch
+            if (epoch+1) % self.config.model_save_step == 0:
+                self.save_model(epoch+1)
 
             if epoch == 50 or epoch == 80 or epoch == 100:
                 self.save_model(epoch)
                 sampled_images = self.ddim_sample(n=16)
                 save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
+            start_epoch =+ 1
+
 
     def test(self):
         print("started_testing")
         # Load the trained model.
-        if self.config.resume_iter:
-            self.restore_model(self.config.resume_iter)
+        if self.config.resume_epoch:
+            self.restore_model(self.config.resume_epoch)
 
         # num_iters = 0
 
@@ -250,10 +251,31 @@ class Diffusion:
         self.kid_metric.reset()
         self.fid_metric.reset()
 
-    def save_model(self, num_iter):
-        unet_path = os.path.join(self.config.model_save_dir, '{}-unet.ckpt'.format(num_iter))
-        torch.save(self.unet.state_dict(), unet_path)
-        print('Saved config checkpoints into {}...'.format(self.config.model_save_dir))
+    def save_model(self, epoch):
+        save_dict = {
+            'epoch': epoch,
+            'model_state_dict': self.unet.state_dict(),
+            'optimizer_state_dict': self.opt.state_dict()
+        }
+
+        save_path = os.path.join(self.config.model_save_dir, '{}-checkpoint.ckpt'.format(epoch))
+        torch.save(save_dict, save_path)
+        print('Saved checkpoints into {}...'.format(save_path))
+
+
+    def restore_model(self, resume_epoch):
+        print('Loading the trained model from epoch {}...'.format(resume_epoch))
+        checkpoint_path = os.path.join(self.config.model_save_dir, '{}-checkpoint.ckpt'.format(resume_epoch))
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        self.unet.load_state_dict(checkpoint['model_state_dict'])
+        self.opt.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch']
+
+        print(f"start epoch: {start_epoch}")
+        print(self.opt.state_dict())
+
+        return start_epoch
+
 
     def print_network(self):
         """Print out the network information."""
@@ -262,13 +284,6 @@ class Diffusion:
             num_params += p.numel()
         print(self.unet)
         print("The number of parameters: {}".format(num_params))
-
-    # NOTE 5000-unet.ckpt so the resume_iters is 5000
-    def restore_model(self, resume_iters):
-        """Restore the trained diffusion model (Unet)."""
-        print('Loading the trained model from epoch {}...'.format(resume_iters))
-        unet_path = os.path.join(self.config.model_save_dir, '{}-unet.ckpt'.format(resume_iters))
-        self.unet.load_state_dict(torch.load(unet_path, map_location=lambda storage, loc: storage))
 
     def setup_logger(self):
         # Initialize WandB

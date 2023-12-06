@@ -31,7 +31,6 @@ class Config(object):
         self.conv_dim = config.conv_dim
         self.block_depth = config.block_depth
         self.time_emb_dim = config.time_emb_dim
-        self.resume_iter = config.resume_iter
 
         # Training configurations.
         self.batch_size = config.batch_size
@@ -40,7 +39,7 @@ class Config(object):
         self.beta_start = config.beta_start
         self.beta_end = config.beta_end
         self.noise_steps = config.noise_steps
-        # self.resume_epoch = config.resume_epoch
+        self.resume_epoch = config.resume_epoch
 
         # Miscellaneous.
         self.num_workers = config.num_workers
