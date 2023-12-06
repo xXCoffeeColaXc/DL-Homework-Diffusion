@@ -86,19 +86,21 @@ class Diffusion:
 
             self.unet.train()
 
-            mean = torch.tensor([0.5, 0.5, 0.5])
-            std = torch.tensor([0.5, 0.5, 0.5])
-            mean = mean.to(self.config.device)
-            std = std.to(self.config.device)
+        # mean = torch.tensor([0.5, 0.5, 0.5])
+        # std = torch.tensor([0.5, 0.5, 0.5])
+        mean = torch.tensor([0.4865, 0.4998, 0.4323])
+        std = torch.tensor([0.2326, 0.2276, 0.2659])
+        mean = mean.to(self.config.device)
+        std = std.to(self.config.device)
 
-            mean = mean[:, None, None]
-            std = std[:, None, None]
+        mean = mean[:, None, None]
+        std = std[:, None, None]
 
 
-            x = x * std + mean
-            x = x * 255
-            x = x.clamp(0, 255).type(torch.uint8)
-            return x
+        x = x * std + mean
+        x = x * 255
+        x = x.clamp(0, 255).type(torch.uint8)
+        return x
 
 
 
