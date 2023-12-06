@@ -155,7 +155,7 @@ class Diffusion:
         l = len(self.dataloader)
 
         for epoch in range(start_epoch, self.config.epochs):
-            print(f"Starting epoch {epoch}:")
+            print(f"Starting epoch {epoch+1}:")
             start_time = time.time() # duration for one epoch
             
             for batch_idx, (images, label, _) in enumerate(self.dataloader):
@@ -270,10 +270,6 @@ class Diffusion:
         self.unet.load_state_dict(checkpoint['model_state_dict'])
         self.opt.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = checkpoint['epoch']
-
-        print(f"start epoch: {start_epoch}")
-        print(self.opt.state_dict())
-
         return start_epoch
 
 
