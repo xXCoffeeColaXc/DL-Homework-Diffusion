@@ -208,7 +208,7 @@ class Diffusion:
                 self.save_model(epoch+1)
 
             if epoch == 50 or epoch == 80 or epoch == 100:
-                self.save_model(epoch)
+                self.save_model(epoch+1)
                 sampled_images = self.ddim_sample(n=16)
                 save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
