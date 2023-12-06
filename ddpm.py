@@ -162,7 +162,7 @@ class Diffusion:
             start_time = time.time() # duration for one epoch
             
             for batch_idx, (images, label, _) in enumerate(self.dataloader):
-                print(batch_idx)    
+                print(batch_idx)
                 images = images.to(self.config.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.config.device) # get batch amount random timesteps
                 noise = torch.randn_like(images)
