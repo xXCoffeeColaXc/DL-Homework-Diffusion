@@ -22,8 +22,10 @@ def main(config):
     diffusion = Diffusion(config=config_obj, dataloader=dataloader)
 
     if config.mode == 'train':
+        print("Training...")
         diffusion.train()
     elif config.mode == 'test':
+        print("Testing...")
         diffusion.test()
 
     if config.wandb:
