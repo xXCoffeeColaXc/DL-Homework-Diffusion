@@ -9,6 +9,8 @@ from torch.backends import cudnn
 from utils import *
 import wandb
 
+from visualizer import DiffusionVisualizer
+
 
 def main(config):
     # For fast training.
@@ -25,8 +27,25 @@ def main(config):
         print("Training...")
         diffusion.train()
     elif config.mode == 'test':
-        print("Testing...")
-        diffusion.test()
+        if config.visualize:
+            print("Visualizing forward and backward process")
+            
+            checkpoint_path = 'outputs/models/189-checkpoint.ckpt'
+            original_image = 'data/CUB_200_2011/CUB_200_2011/images/001.Black_footed_Albatross/Black_Footed_Albatross_0001_796111.jpg'
+            visualizer = DiffusionVisualizer(cfg=config_obj, image_path=original_image, model_checkpoint_path=checkpoint_path)
+            
+            # Visualize the noising process
+            noisy_images = visualizer.add_noise_for_steps(num_steps=10)
+            visualizer.visualize(noisy_images, "Forward Noising Process")
+
+            # Visualize the denoising process
+            denoised_images = visualizer.remove_noise_for_steps(num_steps=10)
+            visualizer.visualize(denoised_images, "Backward Denoising Process")
+
+        else:
+            print("Testing...")
+            diffusion.test()
+        
 
     if config.wandb:
         wandb.finish() # NOTE reallocate this
@@ -60,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=1)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test']) # TODO add val
     parser.add_argument('--wandb', type=int, choices=[0, 1], help='enable wandb logging (0 for False, 1 for True)')
+    parser.add_argument('--visualize', type=int, choices=[0, 1], help='enable visualization (0 for False, 1 for True)')
 
     # Directories.
     parser.add_argument('--image_dir', type=str, default='data/CUB_200_2011/CUB_200_2011')
