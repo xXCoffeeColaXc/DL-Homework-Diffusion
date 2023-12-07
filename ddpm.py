@@ -31,8 +31,9 @@ class Diffusion:
 
     def build_model(self):
         '''Create Unet'''
-        self.unet = UNet(self.config.c_in, self.config.c_out, 
-                         self.config.conv_dim, self.config.block_depth, self.config.time_emb_dim)
+        # self.unet = UNet(self.config.c_in, self.config.c_out, 
+        #                  self.config.conv_dim, self.config.block_depth, self.config.time_emb_dim)
+        self.unet = UNet(self.config.c_in, self.config.c_out, self.config.image_size, self.config.conv_dim, self.config.block_depth, self.config.time_emb_dim)
         
         # Compute alpha, beta, alpha_hat
         self.beta = self.prepare_noise_schedule().to(self.config.device)
