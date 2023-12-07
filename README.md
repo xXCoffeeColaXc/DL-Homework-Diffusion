@@ -45,33 +45,24 @@ This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to gene
 4. Run create_metadata.py
 5. You can also run the following commands:
 ```bash
-# Download the CUB_200_2011.tgz file
 wget -O CUB_200_2011.tgz "https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz?download=1"
-
-# Extract the contents of CUB_200_2011.tgz
 tar -xzvf CUB_200_2011.tgz
 
-# Download the segmentations.tgz file
 wget -O segmentations.tgz "https://data.caltech.edu/records/w9d68-gec53/files/segmentations.tgz?download=1"
-
-# Extract the contents of segmentations.tgz
 tar -xzvf segmentations.tgz
 
-# Create a new directory named 'data' and subdirectories 'CUB_200_2011' and 'metadata' within it
 mkdir data
 cd data
 mkdir CUB_200_2011
 mkdir metadata
 cd ..
 
-# Move the extracted directories into the newly created 'data' directory
 mv CUB_200_2011 data/CUB_200_2011
 mv segmentations data/CUB_200_2011
 
-# Run the Python script to create metadata
 python create_metadata.py
 
-
+```
 
 ### Building and Running the Container:
 1. Clone the repository: `git clone [repository_link]`
