@@ -63,44 +63,44 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.config.noise_steps, size=(n,))
 
-    def ddim_sample(self, n):
+    # def ddim_sample(self, n):
 
-        sample_step_number = self.config.ddim_sample_step
-        sample_steps = np.linspace(1, self.config.noise_steps - 1, sample_step_number + 1, dtype=int)
-        sample_steps = sample_steps[1:] # drop the 1
+    #     sample_step_number = self.config.ddim_sample_step
+    #     sample_steps = np.linspace(1, self.config.noise_steps - 1, sample_step_number + 1, dtype=int)
+    #     sample_steps = sample_steps[1:] # drop the 1
 
-        print(f"Sampling {n} new images...")
-        self.unet.eval()
-        with torch.no_grad():
-            x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
-            for i in reversed(sample_steps):
-                t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
-                alpha_hat = self.alpha_hat[t][:, None, None, None]
-                one_minus_alpha_hat = 1.0 - alpha_hat
-                if self.unet.requires_alpha_hat_timestep:
-                    predicted_noise = self.unet(x, one_minus_alpha_hat)
-                else:
-                    predicted_noise = self.unet(x, t)
-                pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat)
-                x = self.forward_process(pred_img, predicted_noise, t)
+    #     print(f"Sampling {n} new images...")
+    #     self.unet.eval()
+    #     with torch.no_grad():
+    #         x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
+    #         for i in reversed(sample_steps):
+    #             t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
+    #             alpha_hat = self.alpha_hat[t][:, None, None, None]
+    #             one_minus_alpha_hat = 1.0 - alpha_hat
+    #             if self.unet.requires_alpha_hat_timestep:
+    #                 predicted_noise = self.unet(x, one_minus_alpha_hat)
+    #             else:
+    #                 predicted_noise = self.unet(x, t)
+    #             pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat)
+    #             x = self.forward_process(pred_img, predicted_noise, t)
 
-            self.unet.train()
+    #         self.unet.train()
 
-        # mean = torch.tensor([0.5, 0.5, 0.5])
-        # std = torch.tensor([0.5, 0.5, 0.5])
-        mean = torch.tensor([0.4865, 0.4998, 0.4323])
-        std = torch.tensor([0.2326, 0.2276, 0.2659])
-        mean = mean.to(self.config.device)
-        std = std.to(self.config.device)
+    #     # mean = torch.tensor([0.5, 0.5, 0.5])
+    #     # std = torch.tensor([0.5, 0.5, 0.5])
+    #     mean = torch.tensor([0.4865, 0.4998, 0.4323])
+    #     std = torch.tensor([0.2326, 0.2276, 0.2659])
+    #     mean = mean.to(self.config.device)
+    #     std = std.to(self.config.device)
 
-        mean = mean[:, None, None]
-        std = std[:, None, None]
+    #     mean = mean[:, None, None]
+    #     std = std[:, None, None]
 
 
-        x = x * std + mean
-        x = x * 255
-        x = x.clamp(0, 255).type(torch.uint8)
-        return x
+    #     x = x * std + mean
+    #     x = x * 255
+    #     x = x.clamp(0, 255).type(torch.uint8)
+    #     return x
 
 
 
@@ -125,7 +125,7 @@ class Diffusion:
                 else:
                     noise = torch.zeros_like(x)
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
-                break
+                
         self.unet.train()
         # bringing the values back to valid pixel range
         # x = (x.clamp(-1, 1) + 1) / 2
@@ -192,7 +192,7 @@ class Diffusion:
 
                 # Sample images and save them
                 if num_iter % self.config.sample_step == 0:
-                    sampled_images = self.ddpm_sample(n=images.shape[0])
+                    sampled_images = self.ddpm_sample(n=16)
                     save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
                
