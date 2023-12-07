@@ -43,6 +43,20 @@ This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to gene
     - ./data/CUB_200_2011
 3. Extract the bounding boxes and images into ./data/CUB_200_2011
 4. Run create_metadata.py
+5. You can also run the following commands:
+`wget -O CUB_200_2011.tgz "https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz?download=1"`
+`tar -xzvf CUB_200_2011.tgz`
+`wget -O segmentations.tgz "https://data.caltech.edu/records/w9d68-gec53/files/segmentations.tgz?download=1"`
+`tar -xzvf segmentations.tgz`
+`mkdir data`
+`cd data`
+`mkdir CUB_200_2011`
+`mkdir metadata`
+`cd ..`
+`mv CUB_200_2011 data/CUB_200_2011`
+`mv segmentations data/CUB_200_2011`
+`python create_metadata.py`
+
 
 ### Building and Running the Container:
 1. Clone the repository: `git clone [repository_link]`
