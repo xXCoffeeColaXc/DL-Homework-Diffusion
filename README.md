@@ -8,6 +8,10 @@ S+
 - Takáts Bálint - Neptun Code: PUWI1T
 - Hujbert Patrik - Neptun Code: D83AE5
 
+![Forward process](forwardProcess.png)
+![Backward process](backwardDenoising.png)
+
+
 ## Project Description
 This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to generate bird images. Leveraging the comprehensive CUB200 dataset, which contains diverse and detailed images of bird species, the project aims to harness the power of diffusion models for generative tasks.
 
