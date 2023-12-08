@@ -8,8 +8,8 @@ S+
 - Takáts Bálint - Neptun Code: PUWI1T
 - Hujbert Patrik - Neptun Code: D83AE5
 
-![Forward process](forwardProcess.png)
-![Backward process](backwardDenoising.png)
+![Forward process](images/forwardProcess.png)
+![Backward process](images/backwardDenoising.png)
 
 
 ## Project Description
