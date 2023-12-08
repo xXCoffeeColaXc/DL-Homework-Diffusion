@@ -91,3 +91,5 @@ python create_metadata.py
 
 ### Training logs for Milestone 2:
 1. https://api.wandb.ai/links/hakateam/s2jlnpab
+### Training logs for Milestone 3:
+1. https://api.wandb.ai/links/hakateam/h9urwwfu
