@@ -47,7 +47,7 @@ This project focuses on Denoising Diffusion Probabilistic Models (DDPMs) to gene
     - ./data/CUB_200_2011
 3. Extract the bounding boxes and images into ./data/CUB_200_2011
 4. Run create_metadata.py
-5. You can also run the following commands:
+5. You can also run the following commands from the project directory:
 ```bash
 wget -O CUB_200_2011.tgz "https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz?download=1"
 tar -xzvf CUB_200_2011.tgz
