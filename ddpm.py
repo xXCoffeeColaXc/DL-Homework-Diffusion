@@ -63,44 +63,45 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.config.noise_steps, size=(n,))
 
-    # def ddim_sample(self, n):
+    def ddim_sample(self, n):
 
-    #     sample_step_number = self.config.ddim_sample_step
-    #     sample_steps = np.linspace(1, self.config.noise_steps - 1, sample_step_number + 1, dtype=int)
-    #     sample_steps = sample_steps[1:] # drop the 1
+        sample_step_number = self.config.ddim_sample_step
+        sample_steps = np.linspace(self.config.noise_steps - 1, 1, sample_step_number + 1, dtype=int)
+        sample_steps = sample_steps[:-1] # drop the 1
 
-    #     print(f"Sampling {n} new images...")
-    #     self.unet.eval()
-    #     with torch.no_grad():
-    #         x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
-    #         for i in reversed(sample_steps):
-    #             t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
-    #             alpha_hat = self.alpha_hat[t][:, None, None, None]
-    #             one_minus_alpha_hat = 1.0 - alpha_hat
-    #             if self.unet.requires_alpha_hat_timestep:
-    #                 predicted_noise = self.unet(x, one_minus_alpha_hat)
-    #             else:
-    #                 predicted_noise = self.unet(x, t)
-    #             pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat)
-    #             x = self.forward_process(pred_img, predicted_noise, t)
+        print(f"Sampling {n} new images...")
+        self.unet.eval()
+        with torch.no_grad():
+            x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
+            for idx, i in enumerate(sample_steps):
+                t = (torch.ones(n) * i).long().to(self.config.device) # create a tensor of lenght n with the current timestep
+                alpha_hat = self.alpha_hat[t][:, None, None, None]
+                one_minus_alpha_hat = 1.0 - alpha_hat
+                if self.unet.requires_alpha_hat_timestep:
+                    predicted_noise = self.unet(x, one_minus_alpha_hat)
+                else:
+                    predicted_noise = self.unet(x, t)
+                pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat)
+                if idx < len(sample_steps) - 1:
+                    next_t = (torch.ones(n) * sample_steps[idx+1]).long().to(self.config.device)
+                x = self.forward_process(pred_img, predicted_noise, next_t)
 
-    #         self.unet.train()
+            self.unet.train()
 
-    #     # mean = torch.tensor([0.5, 0.5, 0.5])
-    #     # std = torch.tensor([0.5, 0.5, 0.5])
-    #     mean = torch.tensor([0.4865, 0.4998, 0.4323])
-    #     std = torch.tensor([0.2326, 0.2276, 0.2659])
-    #     mean = mean.to(self.config.device)
-    #     std = std.to(self.config.device)
+        # mean = torch.tensor([0.5, 0.5, 0.5])
+        # std = torch.tensor([0.5, 0.5, 0.5])
+        mean = torch.tensor([0.4865, 0.4998, 0.4323])
+        std = torch.tensor([0.2326, 0.2276, 0.2659])
+        mean = mean.to(self.config.device)
+        std = std.to(self.config.device)
 
-    #     mean = mean[:, None, None]
-    #     std = std[:, None, None]
+        mean = mean[:, None, None]
+        std = std[:, None, None]
 
-
-    #     x = x * std + mean
-    #     x = x * 255
-    #     x = x.clamp(0, 255).type(torch.uint8)
-    #     return x
+        x = pred_img * std + mean
+        x = x * 255
+        x = x.clamp(0, 255).type(torch.uint8)
+        return x
 
 
 
@@ -251,7 +252,12 @@ class Diffusion:
 
         # self.kid_metric.reset()
         # self.fid_metric.reset()
-        pass
+        #pass
+        start_epoch = self.restore_model(resume_epoch=self.config.resume_epoch)
+        sampled_images = self.ddim_sample(n=16)
+        num_iter = 200
+        save_images(sampled_images, os.path.join(self.config.sample_dir, f"{self.config.resume_epoch}.jpg"))  # TODO save_image from torch
+
 
     def save_model(self, epoch):
         save_dict = {
