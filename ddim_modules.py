@@ -5,6 +5,27 @@ import math
 import config
 from modules import DiffusionUNet
 
+class SelfAttention(nn.Module):
+    def __init__(self, in_dim):
+        super(SelfAttention, self).__init__()
+        self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1)
+        self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1)
+        self.value_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
+
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x):
+        batch_size, C, width, height = x.size()
+        query = self.query_conv(x).view(batch_size, -1, width * height).permute(0, 2, 1)
+        key = self.key_conv(x).view(batch_size, -1, width * height)
+        value = self.value_conv(x).view(batch_size, -1, width * height)
+
+        attention = self.softmax(torch.bmm(query, key))
+        out = torch.bmm(value, attention.permute(0, 2, 1))
+        out = out.view(batch_size, C, width, height)
+
+        return out + x
+
     
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None, residual=False) -> None:
@@ -93,16 +114,22 @@ class UNet(DiffusionUNet):
         self.pre_conv = nn.Conv2d(c_in, 32, kernel_size=3, padding=1, bias=False)
         self.embedding_upsample = nn.Upsample(size=(image_size, image_size), mode='nearest')
 
+        self.attn_down1 = SelfAttention(64)
         self.down1 = DownBlock(64, 32, block_depth)
+        self.attn_down2 = SelfAttention(32)
         self.down2 = DownBlock(32, 64, block_depth)
+        self.attn_down3 = SelfAttention(64)
         self.down3 = DownBlock(64, 96, block_depth)
 
         self.bottleneck1 = ResidualBlock(96, 128, residual=True)
         self.bottleneck2 = ResidualBlock(128, 128, residual=False)
 
         self.up1 = UpBlock(128, 96, 96, block_depth)
+        self.attn_up1 = SelfAttention(96)
         self.up2 = UpBlock(96, 64, 64, block_depth)
+        self.attn_up2 = SelfAttention(64)
         self.up3 = UpBlock(64, 32, 32, block_depth)
+        self.attn_up3 = SelfAttention(32)
 
         self.output = nn.Conv2d(32, c_out, kernel_size=3, padding=1, bias=False)
 
@@ -137,16 +164,25 @@ class UNet(DiffusionUNet):
         t = self.embedding_upsample(t)
         x = torch.cat([x, t], dim=1)
 
+        # Downward path
+        x = self.attn_down1(x)
         x, skip1 = self.down1(x)
+        x = self.attn_down2(x) 
         x, skip2 = self.down2(x)
+        x = self.attn_down3(x)  
         x, skip3 = self.down3(x)
 
+        # Bottleneck
         x = self.bottleneck1(x)
         x = self.bottleneck2(x)
 
+        # Upward path
         x = self.up1(x, skip3)
+        x = self.attn_up1(x)  
         x = self.up2(x, skip2)
+        x = self.attn_up2(x)  
         x = self.up3(x, skip1)
+        x = self.attn_up3(x)  
 
         output = self.output(x)
 

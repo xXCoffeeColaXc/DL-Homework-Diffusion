@@ -72,6 +72,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.0003, help='learning rate')
     parser.add_argument('--beta_start', type=float, default=0.0001, help='beta start for noise scheluder')
     parser.add_argument('--beta_end', type=float, default=0.02, help='beta end for noise scheluder')
+    parser.add_argument('--s_parameter', type=float, default=0.008, help='Sharpness parameter, controls how "sudden" the change is. A lower value makes the cosine curve smoother.')
+    parser.add_argument('--cos_scheduler', type=int, choices=[0, 1], help='enable cosine scheduler, default is linear scheduler (0 for False, 1 for True)')
     parser.add_argument('--noise_steps', type=int, default=1000, help='noise steps for noise scheluder and sampling')
     parser.add_argument('--resume_epoch', type=int, default=None, help='resume training from this epoch')
    
