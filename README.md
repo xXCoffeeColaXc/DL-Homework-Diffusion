@@ -82,6 +82,7 @@ python create_metadata.py
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
 2. To train the model: `python main.py --mode=train`
 3. To test the model: `python main.py --mode=test`
+4. To visualize the denoising process: `python main.py --mode=test --visualize=1`
 
 ### Running data exploration Within the Container:
 1. Once inside the container, navigate to the project directory: `cd /path/to/project/directory`
