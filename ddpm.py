@@ -13,6 +13,7 @@ import numpy as np
 
 #from modules import UNet
 from ddim_modules import UNet
+import math
 
 
 class Diffusion:
@@ -47,10 +48,29 @@ class Diffusion:
         
         self.unet = self.unet.to(self.config.device)
 
+    def cosine_beta_schedule(self, timesteps, s=0.008):
+        """
+        Create a cosine schedule for beta values.
 
-    # TODO Implement CosineScheduler
+        Args:
+            timesteps (int): Total number of timesteps or noise steps.
+            s (float): Sharpness parameter, controls how "sudden" the change is. 
+                    A lower value makes the cosine curve smoother.
+        
+        Returns:
+            torch.Tensor: Tensor of beta values following a cosine schedule.
+        """
+        steps = torch.arange(timesteps, dtype=torch.float32) / timesteps
+        cosine_vals = 0.5 * (1 + torch.cos(math.pi * steps))
+        alpha_vals = cosine_vals * (1 - s) + s
+        beta_vals = 1 - alpha_vals / torch.cat([torch.tensor([1.0]), alpha_vals[:-1]])
+        return torch.clamp(beta_vals, 0, 0.999)
+
     def prepare_noise_schedule(self):
-        return torch.linspace(self.config.beta_start, self.config.beta_end, self.config.noise_steps)
+        if self.config.cos_scheduler:
+            return self.cosine_beta_schedule(self.config.noise_steps, self.config.s_parameter)
+        else:
+            return torch.linspace(self.config.beta_start, self.config.beta_end, self.config.noise_steps)
     
     # Add t step noise to an image / noise_images
     # x(t) = sqrt(alpha_hat)*x(0) + sqrt(1-alpha_hat)*epsilon
@@ -193,7 +213,7 @@ class Diffusion:
 
                 # Sample images and save them
                 if num_iter % self.config.sample_step == 0:
-                    sampled_images = self.ddpm_sample(n=16)
+                    sampled_images = self.ddpm_sample(n=4)
                     save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
                

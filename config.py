@@ -38,6 +38,8 @@ class Config(object):
         self.lr = config.lr
         self.beta_start = config.beta_start
         self.beta_end = config.beta_end
+        self.s_parameter = config.s_parameter
+        self.cos_scheduler = config.cos_scheduler
         self.noise_steps = config.noise_steps
         self.resume_epoch = config.resume_epoch
 
