@@ -4,6 +4,11 @@ import torch.nn.functional as F
 import math
 import config
 
+# =====================================================
+# IMPORTANT:
+# This python file is outdated and no longer in use.
+# =====================================================
+
 class SelfAttention(nn.Module):
     def __init__(self, channels, size) -> None:
         """

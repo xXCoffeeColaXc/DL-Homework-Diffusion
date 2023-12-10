@@ -1,11 +1,20 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import math
-import config
-from modules import DiffusionUNet
+
+class DiffusionUNet(nn.Module):
+    """
+    Base class for Diffusion U-Net model.
+    """
+    requires_alpha_hat_timestep = False
 
 class SelfAttention(nn.Module):
+    """
+    Implements self-attention mechanism.
+
+    Args:
+        in_dim (int): Number of input channels.
+    """
     def __init__(self, in_dim):
         super(SelfAttention, self).__init__()
         self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1)
@@ -26,8 +35,16 @@ class SelfAttention(nn.Module):
 
         return out + x
 
-    
 class ResidualBlock(nn.Module):
+    """
+    Implements a residual block with optional residual connections.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        mid_channels (int, optional): Number of middle channels. Defaults to None.
+        residual (bool, optional): Whether to include a residual connection. Defaults to False.
+    """
     def __init__(self, in_channels, out_channels, mid_channels=None, residual=False) -> None:
         super(ResidualBlock, self).__init__()
         self.residual = residual
@@ -54,10 +71,16 @@ class ResidualBlock(nn.Module):
         x += res
         return x
     
-
-    
-
 class DownBlock(nn.Module):
+    """
+    Implements a down-sampling block consisting of multiple residual blocks and an average pooling layer.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        block_depth (int): Number of residual blocks.
+        emb_dim (int, optional): Embedding dimension size. Defaults to 256.
+    """
     def __init__(self, in_channels, out_channels, block_depth, emb_dim=256) -> None:
         super(DownBlock, self).__init__()
 
@@ -81,6 +104,16 @@ class DownBlock(nn.Module):
     
 
 class UpBlock(nn.Module):
+    """
+    Implements an up-sampling block consisting of multiple residual blocks and an up-sample layer.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        skip_channels (int): Number of skip connection channels.
+        block_depth (int): Number of residual blocks.
+        emb_dim (int, optional): Embedding dimension size. Defaults to 256.
+    """
     def __init__(self, in_channels, out_channels, skip_channels, block_depth, emb_dim=256) -> None:
         super(UpBlock, self).__init__()
     
@@ -103,6 +136,17 @@ class UpBlock(nn.Module):
     
 # features=[64, 128, 256, 512, 1024]
 class UNet(DiffusionUNet):
+    """
+    Implements the UNet architecture for diffusion models.
+
+    Args:
+        c_in (int, optional): Number of input channels. Defaults to 3.
+        c_out (int, optional): Number of output channels. Defaults to 3.
+        image_size (int, optional): Size of the image. Defaults to 64.
+        conv_dim (int, optional): Base number of convolution dimensions. Defaults to 64.
+        block_depth (int, optional): Depth of blocks in the model. Defaults to 3.
+        time_emb_dim (int, optional): Time embedding dimension size. Defaults to 256.
+    """
     def __init__(self, c_in=3, c_out=3, image_size=64, conv_dim=64, block_depth=3, time_emb_dim=256) -> None:
         super(UNet, self).__init__()
         self.requires_alpha_hat_timestep = True
@@ -140,8 +184,16 @@ class UNet(DiffusionUNet):
                                     # Bottleneck: 96, 128
                                     # Bottleneck: 128, 128
 
-
     def sinusoidal_embedding(self, x):
+        """
+        Generates sinusoidal embeddings for time steps.
+
+        Args:
+            x (Tensor): Tensor of time steps.
+
+        Returns:
+            Tensor: Sinusoidal embeddings.
+        """
         embedding_min_frequency = 1.0
         embedding_max_frequency = 1000.0
         embedding_dims = 32

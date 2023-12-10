@@ -1,23 +1,27 @@
-import torch
-import torch.nn as nn
-from tqdm import tqdm
-from utils import *
-from torch import optim
+import math
 import os
 import wandb
 import time
 import datetime
+import numpy as np
+from tqdm import tqdm
+import torch
+import torch.nn as nn
+from torch import optim
 from metrics import KID
 from torchmetrics.image.fid import FrechetInceptionDistance
-import numpy as np
-
-#from modules import UNet
+from utils import *
 from ddim_modules import UNet
-import math
 
 
 class Diffusion:
     def __init__(self, config, dataloader):
+        """Initializes the Diffusion class with configuration and data loader.
+
+        Args:
+            config: Configuration object containing parameters like device, noise steps, etc.
+            dataloader: DataLoader object for iterating over a dataset.
+        """
 
         self.config = config
         self.dataloader = dataloader
@@ -31,9 +35,7 @@ class Diffusion:
             self.setup_logger()
 
     def build_model(self):
-        '''Create Unet'''
-        # self.unet = UNet(self.config.c_in, self.config.c_out, 
-        #                  self.config.conv_dim, self.config.block_depth, self.config.time_emb_dim)
+        """Constructs the U-Net model and initializes other model components like noise schedule and optimizer."""
         self.unet = UNet(self.config.c_in, self.config.c_out, self.config.image_size, self.config.conv_dim, self.config.block_depth, self.config.time_emb_dim)
         
         # Compute alpha, beta, alpha_hat
@@ -49,16 +51,14 @@ class Diffusion:
         self.unet = self.unet.to(self.config.device)
 
     def cosine_beta_schedule(self, timesteps, s=0.008):
-        """
-        Create a cosine schedule for beta values.
+        """Generates a cosine beta schedule for noise levels.
 
         Args:
-            timesteps (int): Total number of timesteps or noise steps.
-            s (float): Sharpness parameter, controls how "sudden" the change is. 
-                    A lower value makes the cosine curve smoother.
-        
+            timesteps: Number of timesteps for the schedule.
+            s: Smoothing parameter for the schedule.
+
         Returns:
-            torch.Tensor: Tensor of beta values following a cosine schedule.
+            Torch tensor of beta values.
         """
         steps = torch.arange(timesteps, dtype=torch.float32) / timesteps
         cosine_vals = 0.5 * (1 + torch.cos(math.pi * steps))
@@ -67,6 +67,7 @@ class Diffusion:
         return torch.clamp(beta_vals, 0, 0.999)
 
     def prepare_noise_schedule(self):
+        """Prepares the noise schedule based on configuration settings."""
         if self.config.cos_scheduler:
             return self.cosine_beta_schedule(self.config.noise_steps, self.config.s_parameter)
         else:
@@ -75,16 +76,42 @@ class Diffusion:
     # Add t step noise to an image / noise_images
     # x(t) = sqrt(alpha_hat)*x(0) + sqrt(1-alpha_hat)*epsilon
     def forward_process(self, x, noise, t):
+        """Performs the forward diffusion process.
+
+        Args:
+            x: Original image tensor.
+            noise: Noise tensor to be added to the image.
+            t: Time step for the diffusion process.
+
+        Returns:
+            Tensor of noised images.
+        """
         sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None, None]
         sqrt_one_minus_alpha_hat = torch.sqrt(1.0 - self.alpha_hat[t])[:, None, None, None]
         return sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * noise
     
     # sample a random timestep
     def sample_timesteps(self, n):
+        """Samples random timesteps for the diffusion process.
+
+        Args:
+            n: Number of timesteps to sample.
+
+        Returns:
+            Torch tensor of sampled timesteps.
+        """
         return torch.randint(low=1, high=self.config.noise_steps, size=(n,))
 
+    # Another sampling method
     def ddim_sample(self, n):
+        """Performs sampling of images using DDIM method.
 
+        Args:
+            n: Number of images to sample.
+
+        Returns:
+            Torch tensor of sampled images.
+        """
         sample_step_number = self.config.ddim_sample_step
         sample_steps = np.linspace(self.config.noise_steps - 1, 1, sample_step_number + 1, dtype=int)
         sample_steps = sample_steps[:-1] # drop the 1
@@ -127,6 +154,14 @@ class Diffusion:
 
     # NOTE Algorithm 2 Sampling from original paper
     def ddpm_sample(self, n):
+        """Performs sampling of images using DDPM method.
+
+        Args:
+            n: Number of images to sample.
+
+        Returns:
+            Torch tensor of sampled images.
+        """
         print(f"Sampling {n} new images...") # TODO logger
         self.unet.eval()
         with torch.no_grad():
@@ -148,10 +183,6 @@ class Diffusion:
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
                 
         self.unet.train()
-        # bringing the values back to valid pixel range
-        # x = (x.clamp(-1, 1) + 1) / 2
-        # x = (x * 255).type(torch.uint8)
-
         mean = torch.tensor([0.4865, 0.4998, 0.4323])
         std = torch.tensor([0.2326, 0.2276, 0.2659])
         mean = mean.to(self.config.device)
@@ -160,7 +191,6 @@ class Diffusion:
         mean = mean[:, None, None]
         std = std[:, None, None]
 
-
         x = x * std + mean
         x = x * 255
         x = x.clamp(0, 255).type(torch.uint8)
@@ -168,7 +198,7 @@ class Diffusion:
 
     # NOTE Algorithm 1 Traning from original paper
     def train(self):
-
+        """Trains the model using the provided dataloader."""
         # Start training from scratch or resume training.
         start_epoch = 0
         if self.config.resume_epoch:
@@ -181,7 +211,6 @@ class Diffusion:
             start_time = time.time() # duration for one epoch
             
             for batch_idx, (images, label, _) in enumerate(self.dataloader):
-                # print(batch_idx)
                 images = images.to(self.config.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.config.device) # get batch amount random timesteps
                 noise = torch.randn_like(images)
@@ -214,9 +243,8 @@ class Diffusion:
                 # Sample images and save them
                 if num_iter % self.config.sample_step == 0:
                     sampled_images = self.ddpm_sample(n=4)
-                    save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
+                    save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg")) 
 
-               
                 # Log to wandb
                 if self.config.wandb:
                     wandb.log({
@@ -225,24 +253,18 @@ class Diffusion:
                         })
                     
             # Save model after every epoch
-            # NOTE we dont want to save the model state mid batch, thats why we save it after an epoch
             if (epoch+1) % self.config.model_save_step == 0:
                 self.save_model(epoch+1)
-
-            if epoch == 50 or epoch == 80 or epoch == 100:
-                self.save_model(epoch+1)
-                sampled_images = self.ddpm_sample(n=16)
-                save_images(sampled_images, os.path.join(self.config.sample_dir, f"{num_iter}.jpg"))  # TODO save_image from torch
 
             start_epoch =+ 1
 
 
     def test(self):
+        """Evaluates the model using KID and FID metrics."""
         print("started_testing")
         # Load the trained model.
         if self.config.resume_epoch:
             self.restore_model(self.config.resume_epoch)
-
 
         for batch_idx, (images, label, _) in tqdm(enumerate(self.dataloader)):
             real_images = images.to(self.config.device) #[0, 1]
@@ -269,20 +291,30 @@ class Diffusion:
         self.kid_metric.reset()
         self.fid_metric.reset()
 
-
     def save_model(self, epoch):
+        """Saves the model's state.
+
+        Args:
+            epoch: Current epoch number for naming the saved model file.
+        """
         save_dict = {
             'epoch': epoch,
             'model_state_dict': self.unet.state_dict(),
             'optimizer_state_dict': self.opt.state_dict()
         }
-
         save_path = os.path.join(self.config.model_save_dir, '{}-checkpoint.ckpt'.format(epoch))
         torch.save(save_dict, save_path)
         print('Saved checkpoints into {}...'.format(save_path))
 
-
     def restore_model(self, resume_epoch):
+        """Restores the model from a saved state.
+
+        Args:
+            resume_epoch: Epoch number from which to resume training.
+
+        Returns:
+            The starting epoch number.
+        """
         print('Loading the trained model from epoch {}...'.format(resume_epoch))
         checkpoint_path = os.path.join(self.config.model_save_dir, '{}-checkpoint.ckpt'.format(resume_epoch))
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
@@ -290,7 +322,6 @@ class Diffusion:
         self.opt.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = checkpoint['epoch']
         return start_epoch
-
 
     def print_network(self):
         """Print out the network information."""
@@ -301,6 +332,7 @@ class Diffusion:
         print("The number of parameters: {}".format(num_params))
 
     def setup_logger(self):
+        """Sets up the WandB logger for tracking experiments."""
         # Initialize WandB
         wandb.init(project='bird-diffusion-project', config={
             "image_size": self.config.image_size,
@@ -312,6 +344,5 @@ class Diffusion:
             "noise_steps": self.config.noise_steps,
             # ... Add other hyperparameters here
         })
-
         # Ensure DEVICE is tracked in WandB
         wandb.config.update({"device": self.config.device})

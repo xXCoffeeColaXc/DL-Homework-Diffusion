@@ -1,16 +1,11 @@
-import torch 
-import os
 import argparse
-from modules import UNet
 from ddpm import Diffusion
 from config import Config
 from dataloader import get_data
 from torch.backends import cudnn
 from utils import *
 import wandb
-
 from visualizer import DiffusionVisualizer
-
 
 def main(config):
     # For fast training.
@@ -48,7 +43,7 @@ def main(config):
         
 
     if config.wandb:
-        wandb.finish() # NOTE reallocate this
+        wandb.finish()
 
 
 if __name__ == '__main__':
@@ -63,8 +58,6 @@ if __name__ == '__main__':
     parser.add_argument('--conv_dim', type=int, default=64, help='number of conv filters in the first layer of the UNet')
     parser.add_argument('--block_depth', type=int, default=3, help='depth of conv layers in encoder/decoder')
     parser.add_argument('--time_emb_dim', type=int, default=256, help='number of channels for time embedding')
-    
-    # parser.add_argument('--block_depth_bottleneck', type=int, default=6, help='depth of conv layers in the bottleneck')
     
     # Training configuration.
     parser.add_argument('--batch_size', type=int, default=8, help='mini-batch size')

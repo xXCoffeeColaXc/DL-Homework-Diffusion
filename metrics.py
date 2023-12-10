@@ -4,11 +4,20 @@ from torchvision import models, transforms
 from torchvision.models.inception import Inception_V3_Weights
 from torchmetrics import MeanMetric
 from torchmetrics.metric import Metric
-import torch.nn.functional as F
 from functools import partial
-from typing import Optional, Tuple, Union, List
+from typing import Optional
 
 class KID(Metric):
+    """
+    Kernel Inception Distance (KID) metric implementation using InceptionV3.
+
+    Args:
+        device (str): Device to run the Inception model on.
+        target_layer_name (str, optional): Name of the target layer in InceptionV3 to extract features from. Defaults to "avgpool".
+
+    Raises:
+        ValueError: If the `target_layer_name` is not a valid layer in InceptionV3.
+    """
     def __init__(self, device, target_layer_name: str = "avgpool"):
         super().__init__()
         self.config_device = device
@@ -31,6 +40,12 @@ class KID(Metric):
         ])
 
     def register_hooks(self):
+        """
+        Registers forward hooks to capture the outputs of the target layers.
+
+        Returns:
+            dict: A dictionary containing layer activations.
+        """
         activations = {}
 
         def hook_fn(module, input, output, key):
@@ -42,9 +57,24 @@ class KID(Metric):
         return activations
 
     def get_target_layers(self):
+        """
+        Retrieves the target layers from the Inception model.
+
+        Returns:
+            dict: A dictionary of target layers.
+        """
         return {name: layer for name, layer in self.inception.named_children() if name in self.target_layer_names}
 
     def extract_features(self, input_batch: Tensor):
+        """
+        Extracts features from a batch of images using the Inception model.
+
+        Args:
+            input_batch (Tensor): A batch of images.
+
+        Returns:
+            Tensor: Extracted features from the target layer.
+        """
         output = self.inception(input_batch)
         activation = self.activations[self.target_layer_name]
         if self.target_layer_name == "avgpool":
@@ -53,11 +83,31 @@ class KID(Metric):
         return activation
 
     def polynomial_kernel(self, features_1: Tensor, features_2: Tensor, degree: int = 3, gamma: Optional[float] = None, coef: float = 1.0):
+        """
+        Calculates the polynomial kernel between two sets of features.
+
+        Args:
+            features_1 (Tensor): Features from the first set of images.
+            features_2 (Tensor): Features from the second set of images.
+            degree (int, optional): Degree of the polynomial kernel. Defaults to 3.
+            gamma (float, optional): Kernel coefficient. Defaults to 1 / number of features.
+            coef (float, optional): Independent term in polynomial kernel. Defaults to 1.0.
+
+        Returns:
+            Tensor: Calculated polynomial kernel.
+        """
         if gamma is None:
             gamma = 1.0 / features_1.shape[1]
         return (features_1 @ features_2.T * gamma + coef) ** degree
 
     def update(self, real_images: Tensor, generated_images : Tensor):
+        """
+        Updates the metric's state with a new batch of real and generated images.
+
+        Args:
+            real_images (Tensor): Batch of real images.
+            generated_images (Tensor): Batch of generated images.
+        """
         real_input = self.preprocess_transform(real_images)
         generated_input = self.preprocess_transform(generated_images)
         real_features = self.extract_features(real_input)

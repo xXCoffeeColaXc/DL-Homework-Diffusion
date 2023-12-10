@@ -2,10 +2,7 @@ from PIL import Image
 import os
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import json 
-import config
-from torchvision.utils import save_image
-import numpy as np  
+import json  
 import torch
 
 class CUB200Dataset(Dataset):
@@ -34,18 +31,13 @@ class CUB200Dataset(Dataset):
         self.image_ids = [img_id for img_id, s in self.train_test_split_dict.items() if s == self.mode]
 
     def __len__(self):
-        #return len(self.image_ids) * 2 #increase the dataset size by 2x:
         return len(self.image_ids)
 
     def __getitem__(self, idx):
-        #img_id = self.image_ids[idx]
-
         '''
         Each image in the dataset will be augmented and fetched twice in one epoch, 
         effectively doubling the dataset size.
         '''
-
-        #img_id = self.image_ids[idx % len(self.image_ids)]  # wrap around to the original dataset
         img_id = self.image_ids[idx] 
 
         img_path = os.path.join(self.root_dir, "images", self.images_dict[img_id])
@@ -91,6 +83,20 @@ class CUB200Dataset(Dataset):
         pass
 
 def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train", num_workers=1):
+    """
+    Prepares and loads data from the specified directory.
+
+    Args:
+        image_dir (str): Directory containing image files.
+        metadata_dir (str): Directory containing metadata for the images.
+        image_size (int, optional): Size to which images will be resized. Defaults to 64.
+        batch_size (int, optional): Number of images per batch in the dataloader. Defaults to 8.
+        mode (str, optional): Mode of data preparation - 'train' or 'test'. Defaults to "train".
+        num_workers (int, optional): Number of workers to use for data loading. Defaults to 1.
+
+    Returns:
+        DataLoader: Dataloader object for the prepared dataset.
+    """
     # Common transformations
     mean = torch.tensor([0.4865, 0.4998, 0.4323])
     std = torch.tensor([0.2326, 0.2276, 0.2659])
@@ -107,10 +113,8 @@ def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train",
         #transforms.ColorJitter(brightness=0.2),
         #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         #transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
-
         base_transforms.insert(2, transforms.RandomHorizontalFlip()) # Insert RandomHorizontalFlip after RandomCrop
 
-    # TODO rethink base_transforms
     if mode == "test":
         base_transforms = [
             transforms.Resize(299),
@@ -118,8 +122,6 @@ def get_data(image_dir, metadata_dir, image_size=64, batch_size=8, mode="train",
             transforms.ToTensor(),
             #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
-
-    
 
     transform = transforms.Compose(base_transforms)
 

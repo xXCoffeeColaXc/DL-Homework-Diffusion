@@ -1,25 +1,8 @@
 import torch
-from torchvision import transforms
-import os
 
-# DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 ROOT_DIR = "./data/CUB_200_2011/CUB_200_2011"
 METADATA_DIR = "./data/metadata"
-# EVAL = './eval'
-# MODEL_CHECKPOINT = "diff.pth.tar"
-# RUN_NAME = "DDPM_BASELINE"
 
-# IMAGE_SIZE = 64
-# NOISE_STEPS = 1000
-# BETA_START = 1e-4
-# BETA_END = 0.02
-
-# NUM_EPOCHS = 100
-# LEARNING_RATE = 3e-4 # TODO constant lr ?
-# BATCH_SIZE = 1
-# NUM_WORKERS = 1
-
-# SAMPLE_STEP = 1 # 
 
 class Config(object):
     def __init__(self, config) -> None:
