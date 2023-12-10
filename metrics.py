@@ -75,7 +75,6 @@ class KID(Metric):
         mean_kernel_cross = torch.mean(kernel_cross)
 
         kid = mean_kernel_real + mean_kernel_generated - 2.0 * mean_kernel_cross
-        print("MY kid value: ", kid)
 
         self.kid_mean.update(kid)
 
