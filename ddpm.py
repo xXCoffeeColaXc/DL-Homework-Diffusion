@@ -7,8 +7,8 @@ import os
 import wandb
 import time
 import datetime
-# from metrics import KID
-# from torchmetrics.image.fid import FrechetInceptionDistance
+from metrics import KID
+from torchmetrics.image.fid import FrechetInceptionDistance
 import numpy as np
 
 #from modules import UNet
@@ -24,8 +24,8 @@ class Diffusion:
 
         self.build_model()
 
-        # self.kid_metric = KID()
-        # self.fid_metric = FrechetInceptionDistance(feature=2048, normalize=True)
+        self.kid_metric = KID(device=self.config.device)
+        self.fid_metric = FrechetInceptionDistance(feature=2048, normalize=True).to(self.config.device)
 
         if self.config.wandb:
             self.setup_logger()
@@ -89,7 +89,7 @@ class Diffusion:
         sample_steps = np.linspace(self.config.noise_steps - 1, 1, sample_step_number + 1, dtype=int)
         sample_steps = sample_steps[:-1] # drop the 1
 
-        print(f"Sampling {n} new images...")
+        #print(f"Sampling {n} new images...")
         self.unet.eval()
         with torch.no_grad():
             x = torch.randn((n, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
@@ -239,44 +239,35 @@ class Diffusion:
 
     def test(self):
         print("started_testing")
-        # # Load the trained model.
-        # if self.config.resume_epoch:
-        #     self.restore_model(self.config.resume_epoch)
+        # Load the trained model.
+        if self.config.resume_epoch:
+            self.restore_model(self.config.resume_epoch)
 
-        # # num_iters = 0
 
-        # for batch_idx, (images, label, _) in enumerate(self.dataloader):
-        #     real_images = images.to(self.config.device) #[0, 1]
-        #     generated_images = self.ddim_sample(self.config.batch_size) #[0, 255]
-        #     generated_images = (generated_images / 255) #[0, 1]
+        for batch_idx, (images, label, _) in tqdm(enumerate(self.dataloader)):
+            real_images = images.to(self.config.device) #[0, 1]
+            generated_images = self.ddim_sample(real_images.shape[0]) #[0, 255]
+            generated_images = (generated_images / 255) #[0, 1]
             
-        #     # TODO check what's wrong when batch_size=1, while updating the metrics
-        #     self.kid_metric.update(real_images, generated_images)
-        #     self.fid_metric.update(real_images, real=True)
-        #     self.fid_metric.update(generated_images, real=False)
+            # TODO check what's wrong when batch_size=1, while updating the metrics
+            self.kid_metric.update(real_images, generated_images)
+            self.fid_metric.update(real_images, real=True)
+            self.fid_metric.update(generated_images, real=False)
 
-        #     # num_iters += 1
-        #     # if num_iters > 2: 
-        #     #     break
             
-        # kid_score = self.kid_metric.compute()
-        # print(f"KID score: {kid_score}")
-        # fid_score = self.fid_metric.compute()
-        # print(f"FID score: {fid_score}")
-        # if self.config.wandb:
-        #     print("wandb log")
-        #     wandb.log({
-        #         "kid_score": kid_score,
-        #         "fid_score": fid_score
-        #     })
+        kid_score = self.kid_metric.compute()
+        print(f"KID score: {kid_score}")
+        fid_score = self.fid_metric.compute()
+        print(f"FID score: {fid_score}")
+        if self.config.wandb:
+            print("wandb log")
+            wandb.log({
+                "kid_score": kid_score,
+                "fid_score": fid_score
+            })
 
-        # self.kid_metric.reset()
-        # self.fid_metric.reset()
-        #pass
-        start_epoch = self.restore_model(resume_epoch=self.config.resume_epoch)
-        sampled_images = self.ddim_sample(n=16)
-        num_iter = 200
-        save_images(sampled_images, os.path.join(self.config.sample_dir, f"{self.config.resume_epoch}.jpg"))  # TODO save_image from torch
+        self.kid_metric.reset()
+        self.fid_metric.reset()
 
 
     def save_model(self, epoch):

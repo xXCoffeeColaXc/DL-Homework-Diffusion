@@ -9,9 +9,10 @@ from functools import partial
 from typing import Optional, Tuple, Union, List
 
 class KID(Metric):
-    def __init__(self, target_layer_name: str = "avgpool"):
+    def __init__(self, device, target_layer_name: str = "avgpool"):
         super().__init__()
-        self.inception = models.inception_v3(weights=Inception_V3_Weights.IMAGENET1K_V1)
+        self.config_device = device
+        self.inception = models.inception_v3(weights=Inception_V3_Weights.IMAGENET1K_V1).to(device)
         self.inception.eval()
 
         # InceptionV3 input  size should be (299, 299)
@@ -22,7 +23,7 @@ class KID(Metric):
         self.target_layer_name = target_layer_name
         self.activations = self.register_hooks()
 
-        self.kid_mean = MeanMetric()
+        self.kid_mean = MeanMetric().to(device)
 
         self.preprocess_transform = transforms.Compose([
             transforms.Resize(self.target_size),
@@ -69,11 +70,12 @@ class KID(Metric):
         batch_size = real_features.size(0)
         batch_size_f = float(batch_size)
 
-        mean_kernel_real = kernel_real.sum() - torch.diag(kernel_real) / (batch_size_f * (batch_size_f - 1.0))
-        mean_kernel_generated = kernel_generated.sum() - torch.diag(kernel_generated) / (batch_size_f * (batch_size_f - 1.0))
+        mean_kernel_real = (kernel_real.sum(dim=-1) - torch.diag(kernel_real)).sum() / (batch_size_f * (batch_size_f - 1.0))
+        mean_kernel_generated = (kernel_generated.sum(dim=-1) - torch.diag(kernel_generated)).sum() / (batch_size_f * (batch_size_f - 1.0))
         mean_kernel_cross = torch.mean(kernel_cross)
 
         kid = mean_kernel_real + mean_kernel_generated - 2.0 * mean_kernel_cross
+        print("MY kid value: ", kid)
 
         self.kid_mean.update(kid)
 
