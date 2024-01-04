@@ -6,6 +6,7 @@ from torch.backends import cudnn
 from utils import *
 import wandb
 from visualizer import DiffusionVisualizer
+from app import VisualizerApplication
 
 def main(config):
     # For fast training.
@@ -23,19 +24,23 @@ def main(config):
         diffusion.train()
     elif config.mode == 'test':
         if config.visualize:
-            print("Visualizing forward and backward process")
+            app = VisualizerApplication(config=config_obj)
+            app.run()
+            # print("Visualizing forward and backward process")
             
-            checkpoint_path = 'outputs/models/189-checkpoint.ckpt'
-            original_image = 'data/CUB_200_2011/CUB_200_2011/images/001.Black_footed_Albatross/Black_Footed_Albatross_0001_796111.jpg'
-            visualizer = DiffusionVisualizer(cfg=config_obj, image_path=original_image, model_checkpoint_path=checkpoint_path)
+            # checkpoint_path = 'outputs/models/189-checkpoint.ckpt'
+            # original_image = 'data/CUB_200_2011/CUB_200_2011/images/001.Black_footed_Albatross/Black_Footed_Albatross_0001_796111.jpg'
+            # visualizer = DiffusionVisualizer(cfg=config_obj, image_path=original_image, model_checkpoint_path=checkpoint_path)
             
-            # Visualize the noising process
-            noisy_images = visualizer.add_noise_for_steps(num_steps=10)
-            visualizer.visualize(noisy_images, "Forward Noising Process")
+            # # Visualize the noising process
+            # noisy_images = visualizer.add_noise_for_steps(num_steps=10)
+            # visualizer.visualize(noisy_images, "Forward Noising Process")
 
-            # Visualize the denoising process
-            denoised_images = visualizer.remove_noise_for_steps(num_steps=10)
-            visualizer.visualize(denoised_images, "Backward Denoising Process")
+            # # Visualize the denoising process
+            # denoised_images = visualizer.remove_noise_for_steps(num_steps=10)
+            # visualizer.visualize(denoised_images, "Backward Denoising Process")
+
+
 
         else:
             print("Testing...")

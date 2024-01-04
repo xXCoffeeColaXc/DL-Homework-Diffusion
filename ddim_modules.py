@@ -158,22 +158,22 @@ class UNet(DiffusionUNet):
         self.pre_conv = nn.Conv2d(c_in, 32, kernel_size=3, padding=1, bias=False)
         self.embedding_upsample = nn.Upsample(size=(image_size, image_size), mode='nearest')
 
-        self.attn_down1 = SelfAttention(64)
+        #self.attn_down1 = SelfAttention(64)
         self.down1 = DownBlock(64, 32, block_depth)
-        self.attn_down2 = SelfAttention(32)
+        #self.attn_down2 = SelfAttention(32)
         self.down2 = DownBlock(32, 64, block_depth)
-        self.attn_down3 = SelfAttention(64)
+        #self.attn_down3 = SelfAttention(64)
         self.down3 = DownBlock(64, 96, block_depth)
 
         self.bottleneck1 = ResidualBlock(96, 128, residual=True)
         self.bottleneck2 = ResidualBlock(128, 128, residual=False)
 
         self.up1 = UpBlock(128, 96, 96, block_depth)
-        self.attn_up1 = SelfAttention(96)
+        #self.attn_up1 = SelfAttention(96)
         self.up2 = UpBlock(96, 64, 64, block_depth)
-        self.attn_up2 = SelfAttention(64)
+        #self.attn_up2 = SelfAttention(64)
         self.up3 = UpBlock(64, 32, 32, block_depth)
-        self.attn_up3 = SelfAttention(32)
+        #self.attn_up3 = SelfAttention(32)
 
         self.output = nn.Conv2d(32, c_out, kernel_size=3, padding=1, bias=False)
 
@@ -217,11 +217,11 @@ class UNet(DiffusionUNet):
         x = torch.cat([x, t], dim=1)
 
         # Downward path
-        x = self.attn_down1(x)
+        #x = self.attn_down1(x)
         x, skip1 = self.down1(x)
-        x = self.attn_down2(x) 
+        #x = self.attn_down2(x) 
         x, skip2 = self.down2(x)
-        x = self.attn_down3(x)  
+        #x = self.attn_down3(x)  
         x, skip3 = self.down3(x)
 
         # Bottleneck
@@ -230,11 +230,11 @@ class UNet(DiffusionUNet):
 
         # Upward path
         x = self.up1(x, skip3)
-        x = self.attn_up1(x)  
+        #x = self.attn_up1(x)  
         x = self.up2(x, skip2)
-        x = self.attn_up2(x)  
+        #x = self.attn_up2(x)  
         x = self.up3(x, skip1)
-        x = self.attn_up3(x)  
+        #x = self.attn_up3(x)  
 
         output = self.output(x)
 

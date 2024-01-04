@@ -1,18 +1,14 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from ddpm import Diffusion
+from dataloader import get_data
 from PIL import Image
 from ddim_modules import UNet
 from torchvision.transforms import transforms
+from tqdm import tqdm
 
 class DiffusionVisualizer(object):
-    """
-    Visualizes the diffusion process using a trained U-Net model.
-
-    Args:
-        cfg: Configuration object containing model and image processing parameters.
-        image_path (str): Path to the image file to be processed.
-        model_checkpoint_path (str): Path to the trained model checkpoint file.
-    """
     def __init__(self, cfg, image_path, model_checkpoint_path):
         self.config = cfg
         self.image_path = image_path
@@ -34,11 +30,9 @@ class DiffusionVisualizer(object):
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
         self.unet.to(self.config.device)
+        
 
     def preprocess_image(self):
-        """
-        Preprocesses the input image and loads it into the configured device.
-        """
         self.mean = torch.tensor([0.4865, 0.4998, 0.4323])
         self.std = torch.tensor([0.2326, 0.2276, 0.2659])
         base_transforms = [
@@ -58,17 +52,6 @@ class DiffusionVisualizer(object):
         return torch.linspace(self.config.beta_start, self.config.beta_end, self.config.noise_steps)
     
     def forward_process(self, x, noise, t):
-        """
-        Applies the forward diffusion process to an image.
-
-        Args:
-            x (Tensor): Original image tensor.
-            noise (Tensor): Noise tensor to be added to the image.
-            t (Tensor): Time step for the diffusion process.
-
-        Returns:
-            Tensor: Noisy image tensor.
-        """
         sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None, None]
         sqrt_one_minus_alpha_hat = torch.sqrt(1.0 - self.alpha_hat[t])[:, None, None, None]
         noisy_image = sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * noise
@@ -80,15 +63,6 @@ class DiffusionVisualizer(object):
         return noisy_image
     
     def add_noise_for_steps(self, num_steps=10):
-        """
-        Gradually adds noise to an image over a given number of steps.
-
-        Args:
-            num_steps (int, optional): Number of steps to add noise. Defaults to 10.
-
-        Returns:
-            list: List of noisy images at each step.
-        """
         # Ensure test_image is a single image (not batched)
         test_image_single = self.test_image.squeeze(0)  # Removes the batch dimension if it's present
         noisy_images = [test_image_single.cpu().detach()]
@@ -110,15 +84,6 @@ class DiffusionVisualizer(object):
 
 
     def remove_noise_for_steps(self, num_steps=10):
-        """
-        Gradually removes noise from a purely noisy image over a given number of steps.
-
-        Args:
-            num_steps (int, optional): Number of steps to remove noise. Defaults to 10.
-
-        Returns:
-            list: List of denoised images at each step.
-        """
         # Start with pure noise
         noise_image = torch.randn((1, 3, self.config.image_size, self.config.image_size)).to(self.config.device)
         denoised_images = [noise_image.squeeze(0).cpu().detach()]
@@ -158,7 +123,7 @@ class DiffusionVisualizer(object):
         fig, axes = plt.subplots(1, num_images, figsize=(num_images * 2, 2))
         for i, image in enumerate(images):
             ax = axes[i]
-            image = self.denorm(image)
+            #image = self.denorm(image)
             ax.imshow(image.permute(1, 2, 0))  # Adjust for PyTorch channel order
             ax.axis('off')
         plt.suptitle(title)
