@@ -92,6 +92,9 @@ python create_metadata.py
 5. Open data exploration file: `data_exploration.ipynb`
 
 
+### Running the Streamlit application:
+1. Install Streamlit  `pip install streamlit`
+2. Run Streamlit `streamlit run streamlit-app.py`
 
 ### Training logs for Milestone 2:
 1. https://api.wandb.ai/links/hakateam/s2jlnpab
