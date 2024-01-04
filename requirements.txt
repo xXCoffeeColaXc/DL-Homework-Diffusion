@@ -14,3 +14,4 @@ wandb==0.16.0
 torchmetrics==1.2.0
 torch-fidelity==0.3.0
 streamlit==1.28.2
+onnxruntime==1.16.3
