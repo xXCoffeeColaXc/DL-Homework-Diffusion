@@ -95,6 +95,7 @@ python create_metadata.py
 ### Running the Streamlit application:
 1. Install Streamlit  `pip install streamlit`
 2. Run Streamlit `streamlit run streamlit-app.py`
+2. Or you can try it online: `https://diffusion-homework.streamlit.app/`
 ![UI](images/UI.png)
 
 ### Training logs for Milestone 2:
