@@ -3,7 +3,7 @@ from PIL import Image
 import torch
 from ddim_modules import UNet
 import numpy as np
-
+import onnxruntime
 
 config = {
   "model_config": {
@@ -81,27 +81,6 @@ def prepare_noise_schedule():
                           config["training_config"]["beta_end"], 
                           config["training_config"]["noise_steps"])
 
-beta = prepare_noise_schedule().to(device)
-alpha = 1.0 - beta
-alpha_hat = torch.cumprod(alpha, dim=0)
-
-
-    
-def forward_process(x, noise, t):
-    """Performs the forward diffusion process.
-
-    Args:
-        x: Original image tensor.
-        noise: Noise tensor to be added to the image.
-        t: Time step for the diffusion process.
-
-    Returns:
-        Tensor of noised images.
-    """
-    sqrt_alpha_hat = torch.sqrt(alpha_hat[t])[:, None, None, None]
-    sqrt_one_minus_alpha_hat = torch.sqrt(1.0 - alpha_hat[t])[:, None, None, None]
-    return sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * noise
-
 def ddpm_sample( n):
     print(f"Sampling {n} new images...") # TODO logger
     unet.eval()
@@ -109,9 +88,9 @@ def ddpm_sample( n):
         x = torch.randn((n, 3, config["model_config"]["image_size"], config["model_config"]["image_size"])).to(device)
         for i in reversed(range(1, config["training_config"]["noise_steps"])):
             t = (torch.ones(n) * i).long().to(device) # create a tensor of lenght n with the current timestep
-            # beta = prepare_noise_schedule().to(device)
-            # alpha = 1.0 - beta
-            # alpha_hat = torch.cumprod(alpha, dim=0)
+            beta = prepare_noise_schedule().to(device)
+            alpha = 1.0 - beta
+            alpha_hat = torch.cumprod(alpha, dim=0)
             
             one_minus_alpha_hat = 1.0 - alpha_hat[t][:, None, None, None]
             if unet.requires_alpha_hat_timestep:
@@ -131,38 +110,34 @@ def ddpm_sample( n):
     denormed_x = [denorm(i.cpu().detach()) for i in x]
     return denormed_x
 
-
-def ddim_sample(n, sample_steps):
-    """Performs sampling of images using DDIM method.
-
-    Args:
-        n: Number of images to sample.
-
-    Returns:
-        Torch tensor of sampled images.
-    """
-    sample_step_number = sample_steps
-    sample_steps = np.linspace(config["training_config"]["noise_steps"] - 1, 1, sample_step_number + 1, dtype=int)
-    sample_steps = sample_steps[:-1] # drop the 1
-
-    #print(f"Sampling {n} new images...")
+def ddpm_sample_onnx(n):
+    onnx_unet = onnxruntime.InferenceSession("outputs/models/198-checkpoint.onnx")
+    print(f"Sampling {n} new images...") # TODO logger
     unet.eval()
     with torch.no_grad():
         x = torch.randn((n, 3, config["model_config"]["image_size"], config["model_config"]["image_size"])).to(device)
-        for idx, i in enumerate(sample_steps):
+        for i in reversed(range(1, config["training_config"]["noise_steps"])):
             t = (torch.ones(n) * i).long().to(device) # create a tensor of lenght n with the current timestep
-            alpha_hat_ = alpha_hat[t][:, None, None, None]
-            one_minus_alpha_hat = 1.0 - alpha_hat_
+            beta = prepare_noise_schedule().to(device)
+            alpha = 1.0 - beta
+            alpha_hat = torch.cumprod(alpha, dim=0)
+            one_minus_alpha_hat = 1.0 - alpha_hat[t][:, None, None, None]
             if unet.requires_alpha_hat_timestep:
-                predicted_noise = unet(x, one_minus_alpha_hat)
+                predicted_noise = onnx_unet.run([], {'images':x.detach().cpu().numpy(), 'timestep': one_minus_alpha_hat.detach().cpu().numpy()})[0]
             else:
-                predicted_noise = unet(x, t)
-            pred_img = (x - (torch.sqrt(one_minus_alpha_hat)) * predicted_noise) / torch.sqrt(alpha_hat_)
-            if idx < len(sample_steps) - 1:
-                next_t = (torch.ones(n) * sample_steps[idx+1]).long().to(device)
-            x = forward_process(pred_img, predicted_noise, next_t)
-
-    denormed_x = [denorm(i.cpu().detach()) for i in pred_img]
+                predicted_noise = onnx_unet.run([], {'images':x.detach().cpu().numpy(), 'timestep': one_minus_alpha_hat.detach().cpu().numpy()})[0]
+            predicted_noise = torch.from_numpy(predicted_noise)
+            alpha = alpha[t][:, None, None, None]
+            alpha_hat = alpha_hat[t][:, None, None, None]
+            beta = beta[t][:, None, None, None]
+            if i > 1:
+                noise = torch.randn_like(x)
+            else:
+                noise = torch.zeros_like(x)
+            x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+            
+    
+    denormed_x = [denorm(i.cpu().detach()) for i in x]
     return denormed_x
 
 def denorm(image):
@@ -179,10 +154,9 @@ def denorm(image):
 
 def generate_image():
     st.write("Generating image with steps:", config["training_config"]["noise_steps"])
-    st.write("Generating image with sample steps:", config["step_size"]["ddim_sample_step"])
     st.write("Generating number of images:", config["num_images"])
     
-    sampled_images = ddim_sample(n=config["num_images"], sample_steps=config["step_size"]["ddim_sample_step"])
+    sampled_images = ddpm_sample_onnx(n=config["num_images"])
 
     resized_images = []
     width, height = 32, 32  
@@ -202,7 +176,6 @@ st.title("Diffusion Model Image Generator")
 
 # Sliders
 config["training_config"]["noise_steps"] = st.slider("Diffusion Step", 10, 1000, 10)
-configconfig["step_size"]["ddim_sample_step"] = st.slider("Sample Step", 10, 200, 10)
 config["num_images"] = st.slider("Number of images", 1, 6, 2)
 
 # Button
