@@ -75,6 +75,7 @@ def build_model(checkpoint_path):
     return unet
 
 unet = build_model("outputs/models/198-checkpoint.ckpt")
+onnx_unet = onnxruntime.InferenceSession("outputs/models/198-checkpoint.onnx")
 
 def prepare_noise_schedule():
     return torch.linspace(config["training_config"]["beta_start"], 
@@ -111,7 +112,6 @@ def ddpm_sample( n):
     return denormed_x
 
 def ddpm_sample_onnx(n):
-    onnx_unet = onnxruntime.InferenceSession("outputs/models/198-checkpoint.onnx")
     print(f"Sampling {n} new images...") # TODO logger
     unet.eval()
     with torch.no_grad():
@@ -176,7 +176,7 @@ st.title("Diffusion Model Image Generator")
 
 # Sliders
 config["training_config"]["noise_steps"] = st.slider("Diffusion Step", 10, 1000, 10)
-config["num_images"] = st.slider("Number of images", 1, 6, 2)
+config["num_images"] = st.slider("Number of images", 2, 6, 2)
 
 # Button
 if st.button("Generate"):
