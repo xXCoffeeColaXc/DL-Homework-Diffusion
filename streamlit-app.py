@@ -156,7 +156,10 @@ def generate_image():
     st.write("Generating image with steps:", config["training_config"]["noise_steps"])
     st.write("Generating number of images:", config["num_images"])
     
-    sampled_images = ddpm_sample_onnx(n=config["num_images"])
+    if config["num_images"] == 2:
+        sampled_images = ddpm_sample_onnx(n=config["num_images"])
+    else:
+        sampled_images = ddpm_sample(n=config["num_images"])
 
     resized_images = []
     width, height = 32, 32  
